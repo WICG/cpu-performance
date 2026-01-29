@@ -172,8 +172,17 @@ Javascript API {#js-api}
 };
 </xmp>
 
-NOTE: <code>window.navigator.cpuPerformance</code> Returns the [=performance
-tier=] as described in [[#computing-performance-tier-value]]
+<div algorithm>
+  The <dfn attribute for=Navigator><code>cpuPerformance</code></dfn> getter
+  steps are:
+
+    1.  Let |tier| be an {{unsigned short}} representing the [=performance
+        tier=] of the device's [=CPU=], generated in an
+        [=implementation-defined=] way, considering the recommendations
+        and constraints described in [[#computing-performance-tier-value]].
+    2.  [=Assert=]: 0 &le; |tier| &le; 4.
+    3.  Return |tier|.
+</div>
 
 
 Security and Privacy Considerations {#security-privacy}
