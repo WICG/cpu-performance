@@ -109,7 +109,7 @@ tiers</dfn>. Each performance tier is represented by a small positive integer
 number. Higher values correspond to higher performance tiers, i.e., to more
 powerful user devices.
 
-There are four distinct performance tiers, numbered 1-4. Applications using the
+There are four distinct performance tiers, numbered 1–4. Applications using the
 API should handle additional tiers (numbered 5 and above) which are likely to be
 added in the future as devices improve over time.
 
@@ -119,7 +119,7 @@ in case the API's implementation is unable to classify the user device.
 
 ## Computing Performance Tier Value ## {#computing-performance-tier-value}
 
-Classification of user devices to performance tiers is implementation specific
+Classification of user devices to performance tiers is `[=implementation-defined=]`: https://infra.spec.whatwg.org/#implementation-defined
 and should be interpreted by web applications according to their particular
 needs. However, implementations of this API should adhere to the following
 rules:
@@ -155,7 +155,7 @@ for a given user device based on the following characteristics:
 -   the CPU model;
 -   the number of cores, physical and/or logical;
 -   the frequency; and
--   possibly other available CPU characteristics.
+-  other available CPU characteristics.
 
 
 Javascript API {#js-api}
@@ -169,7 +169,7 @@ Javascript API {#js-api}
 };
 </xmp>
 
-NOTE: <code>self.navigator.cpuPerformance</code> Returns the performance
+NOTE: <code>window.navigator.cpuPerformance</code> Returns the performance
 tier as described in [[#computing-performance-tier-value]]
 
 
