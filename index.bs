@@ -64,7 +64,7 @@ Modern computing devices contain a number of integrated circuits (multi-core
 processors), each containing a number of <dfn lt='physical core'>physical
 cores</dfn> that operate as independent CPUs.
 Furthermore, technologies for simultaneous multi-threading (or hyper-threading)
-allow physical cores to handle multiple instruction threads, thus appearing as
+allow [=physical cores=] to handle multiple instruction threads, thus appearing as
 multiple separate <dfn lt='logical core'>logical cores</dfn> to the operating
 system.
 
@@ -88,14 +88,14 @@ processing units.
 
 We will use the term <dfn>CPU</dfn> for the collection of central processing
 units that are contained in a computing device.
-We will use the term <dfn>core</dfn> to refer to a CPU part that can execute
-instruction threads, physical or logical, as reported by the operating system.
+We will use the term <dfn>core</dfn> to refer to a [=CPU=] part that can execute
+instruction threads, [=physical cores|physical=] or [=logical cores|logical=], as reported by the operating system.
 We will use the term <dfn>frequency</dfn> to refer to the clock speed of the
-CPU, expressed in cycles per second (Hz) and determining how fast a physical
-CPU core can execute instructions.
+[=CPU=], expressed in cycles per second (Hz) and determining how fast a [=physical
+core=] can execute instructions.
 
-We will use the term <dfn>performance</dfn> to refer to how fast the CPU is
-perceived to be, from the point of view of a web application. A fast CPU
+We will use the term <dfn>performance</dfn> to refer to how fast the [=CPU=] is
+perceived to be, from the point of view of a web application. A fast [=CPU=]
 handles tasks quicker, e.g., leading to faster application loading, better
 multitasking, smoother gaming, etc.
 
@@ -103,59 +103,59 @@ multitasking, smoother gaming, etc.
 Performance Tiers {#tiers}
 ==========================
 
-The CPU Performance API classifies user devices according to their CPU
-performance in a small number of <dfn lt='performance tier'>performance
-tiers</dfn>. Each performance tier is represented by a small positive integer
-number. Higher values correspond to higher performance tiers, i.e., to more
+The CPU Performance API classifies user devices according to their [=CPU=]
+[=performance=] in a small number of <dfn lt='performance tier'>performance
+tiers</dfn>. Each [=performance tier=] is represented by a small positive integer
+number. Higher values correspond to higher [=performance tiers=], i.e., to more
 powerful user devices.
 
-There are four distinct performance tiers, numbered 1–4. Applications using the
-API should handle additional tiers (numbered 5 and above) which are likely to be
+There are four distinct [=performance tiers=], numbered 1–4. Applications using the
+API should handle additional [=performance tiers|tiers=] (numbered 5 and above) which are likely to be
 added in the future as devices improve over time.
 
-The special value 0 (zero) corresponds to an unknown performance tier, returned
+The special value 0 (zero) corresponds to an unknown [=performance tier=], returned
 in case the API's implementation is unable to classify the user device.
 
 
 ## Computing Performance Tier Value ## {#computing-performance-tier-value}
 
-Classification of user devices to performance tiers is `[=implementation-defined=]`: https://infra.spec.whatwg.org/#implementation-defined
+Classification of user devices to [=performance tiers=] is [=implementation-defined=]
 and should be interpreted by web applications according to their particular
 needs. However, implementations of this API should adhere to the following
 rules:
 
-1.  **Consistency**: The mapping of devices to performance tiers should reflect
-    the CPU performance that can be measured with specific benchmarks, ideally
+1.  **Consistency**: The mapping of devices to [=performance tiers=] should reflect
+    the [=CPU=] [=performance=] that can be measured with specific benchmarks, ideally
     using programming tools provided by a browser (JavaScript, WebAssembly, etc.)
     and measured in ideal conditions. More powerful devices should not be
-    classified in lower performance tiers than less powerful devices.
+    classified in lower [=performance tiers=] than less powerful devices.
 
 2.  **Reproducibility**: An implementation should always report the same
-    performance tier for the same user device. In particular:
+    [=performance tier=] for the same user device. In particular:
 
-    -   The reported performance tier should not depend on the user device's
+    -   The reported [=performance tier=] should not depend on the user device's
         current load or utilization; and
-    -   Implementations should not redefine tiers; that is, tier 4 devices
-        should not be reclassified as tier 3 to accommodate newer,
-        higher-powered devices as technology improves. Instead, a new tier 5
+    -   Implementations should not redefine [=performance tiers|tiers=]; that is, [=performance tier|tier=] 4 devices
+        should not be reclassified as [=performance tier|tier=] 3 to accommodate newer,
+        higher-powered devices as technology improves. Instead, a new [=performance tier|tier=] 5
         will be added to this specification for those newer devices, when the
-        need arises, and then a tier 6 and so on.
+        need arises, and then a [=performance tier|tier=] 6 and so on.
 
 3.  **User privacy**: To avoid user fingerprinting, implementations should
-    classify a fairly large number of user devices in each performance tier (see
+    classify a fairly large number of user devices in each [=performance tier=] (see
     also [[#security-privacy]]). In particular, implementations that are based
-    on some CPU model database should not return the special value 0 for new
+    on some [=CPU=] model database should not return the special value 0 for new
     user devices that are not contained in the database. The special value
     should be returned only when the implementation cannot obtain information
-    about the CPU from the operating system.
+    about the [=CPU=] from the operating system.
 
-Implementations may (but are not required to) compute the performance tier value
+Implementations may (but are not required to) compute the [=performance tier=] value
 for a given user device based on the following characteristics:
 
--   the CPU model;
--   the number of cores, physical and/or logical;
--   the frequency; and
--  other available CPU characteristics.
+-   the [=CPU=] model;
+-   the number of [=cores=], [=physical core|physical=] and/or [=logical core|logical=];
+-   the [=frequency=]; and
+-   other available [=CPU=] characteristics.
 
 
 Javascript API {#js-api}
@@ -169,8 +169,8 @@ Javascript API {#js-api}
 };
 </xmp>
 
-NOTE: <code>window.navigator.cpuPerformance</code> Returns the performance
-tier as described in [[#computing-performance-tier-value]]
+NOTE: <code>window.navigator.cpuPerformance</code> Returns the [=performance
+tier=] as described in [[#computing-performance-tier-value]]
 
 
 Security and Privacy Considerations {#security-privacy}
@@ -178,14 +178,14 @@ Security and Privacy Considerations {#security-privacy}
 
 The CPU Performance API will only be available to HTTPS secure contexts.
 
-To reduce fingerprinting risk, the CPU Performance API does not reveal CPU
+To reduce fingerprinting risk, the CPU Performance API does not reveal [=CPU=]
 characteristics directly. The reported value is a small integer number that
-represents the performance tier corresponding to the CPU. For each possible
-value (tier), implementations should ensure that a fairly large number of
+represents the [=performance tier=] corresponding to the [=CPU=]. For each possible
+value ([=performance tier|tier=]), implementations should ensure that a fairly large number of
 computing devices existing on the internet at any given time, both as an
-absolute number and as distinct CPU models, are classified as having this
-performance tier. In particular, the intention of this specification is that
-each performance tier should contain no less than 10% of the existing CPU
+absolute number and as distinct [=CPU=] models, are classified as having this
+[=performance tier=]. In particular, the intention of this specification is that
+each [=performance tier=] should contain no less than 10% of the existing [=CPU=]
 models, and no less than 10% of the existing user devices at any given time.
 
 
@@ -194,7 +194,7 @@ Example {#example}
 
 *This section is non-normative.*
 
-A video conferencing application could interpret the four performance tiers as
+A video conferencing application could interpret the four [=performance tiers=] as
 follows. This interpretation is application specific and, even then, it may have
 to be updated in the future if the application itself is updated and its
 hardware requirements change.
@@ -207,7 +207,7 @@ hardware requirements change.
 
 Such an application could use the value of `navigator.cpuPerformance`
 for pre-selecting a number of features that are best supported by the
-user device's performance tier.
+user device's [=performance tier=].
 
 <div class="example" id="example-1">
 <pre class="highlight lang-javascript">
