@@ -70,16 +70,17 @@ operating system.
 
 Beyond CPU, modern computers may comprise other types of processing units,
 such as:
-Graphics Processing Units (GPU) for handling complex graphics, video,
-and computationally intensive tasks in parallel, like scientific simulations
-and AI training;
-Neural Processing Units (NPU) or Tensor Processing Units (TPU) for improving
-performance in AI and machine learning tasks;
-Digital Signal Processors (DSP) for optimizing the real-time processing of
-signals;
-Field-Programmable Gate Arrays (FPGA) for optimizing specific tasks via
-custom accelerators implemented with reconfigurable, programmable hardware,
-etc.
+
+-   Graphics Processing Units (GPU) for handling complex graphics, video,
+    and computationally intensive tasks in parallel, like scientific simulations
+    and AI training;
+-   Neural Processing Units (NPU) or Tensor Processing Units (TPU) for improving
+    performance in AI and machine learning tasks;
+-   Digital Signal Processors (DSP) for optimizing the real-time processing of
+    signals;
+-   Field-Programmable Gate Arrays (FPGA) for optimizing specific tasks via
+    custom accelerators implemented with reconfigurable, programmable hardware,
+    etc.
 
 This specification currently addresses the Central Processing Unit only,
 aiming to expose a measure of its performance to web applications.
