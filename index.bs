@@ -202,6 +202,8 @@ specification is that each [=performance tier=] should contain no less than 10%
 of the existing [=CPU=] models, and no less than 10% of the existing user
 devices at any given time.
 
+See also the [TAG Security/Privacy Questionnaire](security-privacy-questionnaire.md).
+
 
 Example {#example}
 ==================
