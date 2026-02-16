@@ -3,8 +3,8 @@ Title: CPU Performance API
 Shortname: cpu-performance
 Level: None
 Status: w3c/UD
-Repository: explainers-by-googlers/cpu-performance
-URL: https://explainers-by-googlers.github.io/cpu-performance
+Repository: WICG/cpu-performance
+URL: https://wicg.github.io/cpu-performance/
 Editor: Nikolaos Papaspyrou, Google https://google.com, nikolaos@google.com
 Abstract: This document defines a simple web API which exposes some
   information about how powerful the user device is. It targets web

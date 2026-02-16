@@ -8,8 +8,8 @@ feedback on the proposed solution. It has not been approved to ship in Chrome.
 - Nikolaos Papaspyrou (Google Chrome)
 
 ## Participate
-- [Issue tracker](https://github.com/explainers-by-googlers/cpu-performance/issues)
-- [Discussion forum](https://github.com/explainers-by-googlers/cpu-performance/discussions)
+- [Issue tracker](https://github.com/WICG/cpu-performance/issues)
+- [Discussion forum](https://github.com/WICG/cpu-performance/discussions)
 
 ## Table of Contents
 
