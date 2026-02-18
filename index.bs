@@ -3,16 +3,22 @@ Title: CPU Performance API
 Shortname: cpu-performance
 Level: None
 Status: w3c/UD
-Repository: explainers-by-googlers/cpu-performance
-URL: https://explainers-by-googlers.github.io/cpu-performance
+Repository: WICG/cpu-performance
+URL: https://wicg.github.io/cpu-performance/
 Editor: Nikolaos Papaspyrou, Google https://google.com, nikolaos@google.com
-Abstract: Expose some information about how powerful the user device is. This API targets web applications that will use this information to provide an improved user experience, possibly in combination with the Compute Pressure API, which provides information about the user device’s CPU pressure/utilization and allows applications to react to changes in CPU pressure.
+Abstract: This document defines a simple web API which exposes some
+  information about how powerful the user device is. It targets web
+  applications that will use this static information to provide an
+  improved user experience, possibly in combination with the Compute
+  Pressure API, which provides dynamic information about the user
+  device's CPU pressure/utilization and allows applications to react
+  to changes in CPU pressure.
 Markup Shorthands: markdown yes, css no
 Complain About: accidental-2119 yes, missing-example-ids yes
 Assume Explicit For: yes
 Die On: warning
-WPT Path Prefix: TODO-API-LABEL
-WPT Display: closed
+WPT Path Prefix: cpu-performance
+WPT Display: open
 Include MDN Panels: if possible
 Include Can I Use Panels: yes
 </pre>
@@ -20,9 +26,265 @@ Include Can I Use Panels: yes
 Introduction {#intro}
 =====================
 
-For now, see the <a href=[REPOSITORYURL]>explainer</a>.
+*This section is non-normative.*
 
-See [https://garykac.github.io/procspec/](https://garykac.github.io/procspec/),
-[https://dlaliberte.github.io/bikeshed-intro/index.html](https://dlaliberte.github.io/bikeshed-intro/index.html),
-and [https://speced.github.io/bikeshed/](https://speced.github.io/bikeshed/) to get started on your
-specification.
+There has always been developer interest for adapting web content, based
+on how powerful the user device is. E.g., video-conferencing applications
+or video games may use this information to decide if advanced video effects
+can be rendered; all types of applications may use it to decide whether to
+attempt running AI tasks locally or delegate to the server, etc.
+
+In particular, web applications may want to use performance information to:
+
+1.  Control non-essential tasks and requests; e.g.,
+    allow or block 3rd party scripts,
+    use or avoid heavy libraries.
+2.  Adjust the complexity of web content; e.g.,
+    the resolution and format for images and video,
+    the compression level for uploading data,
+    enable or disable computationally heavy operations such as animations,
+    improve resource management (lazy loading, prefetching, prerendering).
+3.  Improve real user monitoring; e.g.,
+    better understand if users have faster or slower devices,
+    focus development effort more appropriately.
+4.  Run computations on the client side vs. on the server side; e.g.,
+    use server-side rendering,
+    run AI applications and LLMs on the client side.
+5.  Select ads that are better suited for the user device.
+
+
+CPU Performance {#cpu_performance}
+==================================
+
+Modern computing devices often integrate multiple, heterogeneous
+*processing units*, differing in their nature and capabilities.
+The Central Processing Unit (CPU) is the central component in every
+computing device.
+Modern computing devices contain a number of integrated circuits (multi-core
+processors), each containing a number of <dfn lt='physical core'>physical
+cores</dfn> that operate as independent CPUs.
+Furthermore, technologies for simultaneous multi-threading (or hyper-threading)
+allow [=physical cores=] to handle multiple instruction threads, thus appearing
+as multiple separate <dfn lt='logical core'>logical cores</dfn> to the
+operating system.
+
+Beyond CPU, modern computers may comprise other types of processing units,
+such as:
+
+-   Graphics Processing Units (GPU) for handling complex graphics, video,
+    and computationally intensive tasks in parallel, like scientific simulations
+    and AI training;
+-   Neural Processing Units (NPU) or Tensor Processing Units (TPU) for improving
+    performance in AI and machine learning tasks;
+-   Digital Signal Processors (DSP) for optimizing the real-time processing of
+    signals;
+-   Field-Programmable Gate Arrays (FPGA) for optimizing specific tasks via
+    custom accelerators implemented with reconfigurable, programmable hardware,
+    etc.
+
+This specification currently addresses the Central Processing Unit only,
+aiming to expose a measure of its performance to web applications.
+Future versions of this specification may also address other types of
+processing units.
+
+We will use the term <dfn>CPU</dfn> for the collection of central processing
+units that are contained in a computing device.
+We will use the term <dfn>core</dfn> to refer to a [=CPU=] part that can execute
+instruction threads, [=physical cores|physical=] or [=logical cores|logical=],
+as reported by the operating system. We will use the term <dfn>frequency</dfn>
+to refer to the clock speed of the [=CPU=], expressed in cycles per second (Hz)
+and determining how fast a [=physical core=] can execute instructions.
+
+We will use the term <dfn>performance</dfn> to refer to how fast the [=CPU=] is
+perceived to be, from the point of view of a web application. A fast [=CPU=]
+handles tasks quicker, e.g., leading to faster application loading, better
+multitasking, smoother gaming, etc.
+
+
+Performance Tiers {#tiers}
+==========================
+
+The CPU Performance API classifies user devices according to their [=CPU=]
+[=performance=] in a small number of <dfn lt='performance tier'>performance
+tiers</dfn>. Each [=performance tier=] is represented by a small positive
+integer number. Higher values correspond to higher [=performance tiers=], i.e.,
+to more powerful user devices.
+
+There are four distinct [=performance tiers=], numbered 1–4. Applications using
+the API should handle additional [=performance tiers|tiers=] (numbered 5 and
+above) which are likely to be added in the future as devices improve over time.
+
+The special value 0 (zero) corresponds to an unknown [=performance tier=],
+returned in case the API's implementation is unable to classify the user device.
+
+
+## Computing Performance Tier Value ## {#computing-performance-tier-value}
+
+Classification of user devices to [=performance tiers=] is
+[=implementation-defined=] and should be interpreted by web applications
+according to their particular needs. However, implementations of this API should
+adhere to the following rules:
+
+1.  **Consistency**: The mapping of devices to [=performance tiers=] should
+    reflect the [=CPU=] [=performance=] that can be measured with specific
+    benchmarks, ideally using programming tools provided by a browser
+    (JavaScript, WebAssembly, etc.) and measured in ideal conditions. More
+    powerful devices should not be classified in lower [=performance tiers=]
+    than less powerful devices.
+
+2.  **Reproducibility**: An implementation should always report the same
+    [=performance tier=] for the same user device. In particular:
+
+    -   The reported [=performance tier=] should not depend on the user device's
+        current load or utilization; and
+    -   Implementations should not redefine [=performance tiers|tiers=]; that
+        is, [=performance tier|tier=] 4 devices should not be reclassified as
+        [=performance tier|tier=] 3 to accommodate newer, higher-powered devices
+        as technology improves. Instead, a new [=performance tier|tier=] 5
+        will be added to this specification for those newer devices, when the
+        need arises, and then a [=performance tier|tier=] 6 and so on.
+
+    NOTE: The intention of this rule is not to make it impossible to fix
+    classification mistakes in implementations of this API. Such mistakes
+    will inevitably have to be fixed. Rather, the intention of the rule is
+    not to reclassify CPU models with new technology emerging, so as not to
+    break the behavior of obsolete machines running obsolete applications.
+
+3.  **User privacy**: To avoid user fingerprinting, implementations should
+    classify a fairly large number of user devices in each [=performance tier=]
+    (see also [[#security-privacy]]). In particular, implementations that are
+    based on some [=CPU=] model database should not return the special value 0
+    for new user devices that are not contained in the database. The special
+    value should be returned only when the implementation cannot obtain
+    information about the [=CPU=] from the operating system.
+
+Implementations may (but are not required to) compute the [=performance tier=]
+value for a given user device based on the following characteristics:
+
+-   the [=CPU=] model;
+-   the number of [=cores=], [=physical core|physical=] and/or [=logical
+    core|logical=];
+-   the [=frequency=]; and
+-   other available [=CPU=] characteristics.
+
+
+Javascript API {#js-api}
+========================
+<xmp class="idl">
+[
+    SecureContext,
+    Exposed=Window
+] partial interface Navigator {
+    readonly attribute unsigned short cpuPerformance;
+};
+</xmp>
+
+<div algorithm>
+  The <dfn attribute for=Navigator><code>cpuPerformance</code></dfn> getter
+  steps are:
+
+    1.  Let |tier| be an {{unsigned short}} representing the [=performance
+        tier=] of the device's [=CPU=], generated in an
+        [=implementation-defined=] way, considering the recommendations
+        and constraints described in [[#computing-performance-tier-value]].
+    2.  [=Assert=]: 0 &le; |tier| &le; 4.
+    3.  Return |tier|.
+</div>
+
+
+Security and Privacy Considerations {#security-privacy}
+=======================================================
+
+The CPU Performance API will only be available to HTTPS secure contexts.
+
+To reduce fingerprinting risk, the CPU Performance API does not reveal [=CPU=]
+characteristics directly. The reported value is a small integer number that
+represents the [=performance tier=] corresponding to the [=CPU=]. For each
+possible value ([=performance tier|tier=]), implementations should ensure that a
+fairly large number of computing devices existing on the internet at any given
+time, both as an absolute number and as distinct [=CPU=] models, are classified
+as having this [=performance tier=]. In particular, the intention of this
+specification is that each [=performance tier=] should contain no less than 10%
+of the existing [=CPU=] models, and no less than 10% of the existing user
+devices at any given time.
+
+See also the [TAG Security/Privacy Questionnaire](security-privacy-questionnaire.md).
+
+
+Example {#example}
+==================
+
+*This section is non-normative.*
+
+A video conferencing application could interpret the four [=performance tiers=]
+as follows. This interpretation is application specific and, even then, it may
+have to be updated in the future if the application itself is updated and its
+hardware requirements change.
+
+-   1: devices that are practically unusable for video calls;
+-   2: underpowered devices but still adequately suited for video calls;
+-   3: devices that can comfortably accommodate video calls; and
+-   4: devices that can run even the most demanding scenarios and have
+    performance to spare for multitasking.
+
+Such an application could use the value of `navigator.cpuPerformance`
+for pre-selecting a number of features that are best supported by the
+user device's [=performance tier=].
+
+<div class="example" id="example-1">
+<pre class="highlight lang-javascript">
+function getPresetFeatures() {
+  switch (navigator.cpuPerformance) {
+    case 1:
+      return {
+        videoQuality: "QVGA",
+        frameRate: 15,
+        effects: [],
+      };
+    case 2:
+      return {
+        videoQuality: "VGA",
+        frameRate: 15,
+        effects: ['voice-detection', 'animated-reactions'],
+      };
+    case 3:
+      return {
+        videoQuality: "720p",
+        frameRate: 30,
+        effects: ['voice-detection', 'animated-reactions',
+                  'noise-reduction'],
+      };
+    case 4:
+    case 0:    // Assuming high performance settings for unknown devices
+    default:   // and for performance tiers higher than 4.
+      return {
+        videoQuality: "1080p",
+        frameRate: 30,
+        effects: ['voice-detection', 'animated-reactions',
+                  'noise-reduction', 'virtual-background'],
+      };
+  }
+}
+</pre>
+</div>
+
+
+Acknowledgements {#acknowledgements}
+====================================
+
+Many thanks for valuable feedback and advice from:
+Dominic Farolino,
+Deepti Gandluri,
+Reilly Grant,
+Tomas Gunnarsson,
+Markus Handell,
+Michael Lippautz,
+Thomas Nattestad,
+Nicola Tommasi,
+Guido Urdaneta,
+Måns Vestin,
+and
+Chen Xing.
+
+Thanks to the W3C Web Performance Working Group (WebPerf) and especially
+Yoav Weiss.

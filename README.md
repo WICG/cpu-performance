@@ -8,8 +8,8 @@ feedback on the proposed solution. It has not been approved to ship in Chrome.
 - Nikolaos Papaspyrou (Google Chrome)
 
 ## Participate
-- [Issue tracker](https://github.com/explainers-by-googlers/cpu-performance/issues)
-- [Discussion forum](https://github.com/explainers-by-googlers/cpu-performance/discussions)
+- [Issue tracker](https://github.com/WICG/cpu-performance/issues)
+- [Discussion forum](https://github.com/WICG/cpu-performance/discussions)
 
 ## Table of Contents
 
@@ -107,7 +107,7 @@ API](https://github.com/w3c/device-memory), the proposed API will add a new
 read-only attribute to navigator: `navigator.cpuPerformance`, which returns
 a small integer number, indicating the performance bucket that corresponds
 to the user device. The exact value of this attribute (an `unsigned short`)
-will be implementation-specific and it will be generally expected to reflect
+will be implementation specific and it will be generally expected to reflect
 the **performance tier** in which a user device belongs. Higher values
 correspond to higher performance tiers.
 
@@ -123,7 +123,7 @@ then a tier 6 and so on.
 
 For example, a video conferencing application could interpret the four
 performance tiers as follows. Bear in mind that this interpretation is
-application-specific and, even then, it may have to be updated in the
+application specific and, even then, it may have to be updated in the
 future if the application itself is updated and its hardware requirements
 change.
 
@@ -202,7 +202,7 @@ experience on the same hardware, at any time in the future.
 The use of specific benchmark, included in the proposed API's specification, for
 classifying user devices in a small number of performance buckets has been
 considered as an alternative to leaving the details of this classification as
-implementation-specific. Ideally, such a benchmark should be as simple as
+implementation specific. Ideally, such a benchmark should be as simple as
 possible, defined in JavaScript and/or WebAssembly and publicly available. Its
 result should be a numerical score and the API's specification should define how
 this score is mapped to the performance buckets.
