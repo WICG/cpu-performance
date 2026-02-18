@@ -144,6 +144,12 @@ adhere to the following rules:
         will be added to this specification for those newer devices, when the
         need arises, and then a [=performance tier|tier=] 6 and so on.
 
+    NOTE: The intention of this rule is not to make it impossible to fix
+    classification mistakes in implementations of this API. Such mistakes
+    will inevitably have to be fixed. Rather, the intention of the rule is
+    not to reclassify CPU models with new technology emerging, so as not to
+    break the behavior of obsolete machines running obsolete applications.
+
 3.  **User privacy**: To avoid user fingerprinting, implementations should
     classify a fairly large number of user devices in each [=performance tier=]
     (see also [[#security-privacy]]). In particular, implementations that are
