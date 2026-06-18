@@ -61,6 +61,18 @@ resort to running benchmark workloads, to estimate hardware capabilities.
 Providing a public CPU Performance API would help prevent a needless waste of
 resources.
 
+Note that, while both static and dynamic information are useful, the CPU
+Performance API is designed to be a proxy for the user’s device hardware class.
+That is, a powerful device shouldn't be exposed as a low-tier one just because
+other heavy applications are running, or the battery is low. This stability is
+important so that when an app has to make up-front decisions that depend on the
+user's hardware, it can be right most of the time. Such decisions may include
+deciding which libraries to use, adjusting the complexity of web content,
+deciding which ML model to download and run locally, deciding between client
+side vs. server side computations, etc. If necessary, this application can also
+obtain dynamic information through a complementary API like
+[Compute Pressure](https://github.com/w3c/compute-pressure).
+
 ### Goals
 
 -   Allow applications to estimate CPU performance without resorting to
