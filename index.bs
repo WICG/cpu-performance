@@ -120,14 +120,44 @@ returned in case the API's implementation is unable to classify the user device.
 
 ## Computing Performance Tier Value ## {#computing-performance-tier-value}
 
-Classification of user devices to [=performance tiers=] is
-[=implementation-defined=] and should be interpreted by web applications
-according to their particular needs. However, implementations of this API should
-adhere to the following rules:
+<div algorithm>
+  To <dfn>compute the performance tier</dfn> of a user device's [=CPU=]:
 
-1.  **Consistency**: The mapping of devices to [=performance tiers=] should
-    reflect the [=CPU=] [=performance=] that can be measured with specific
-    benchmarks, ideally using programming tools provided by a browser
+    1.  Let |cores| be the number of [=cores=] of the [=CPU=] as reported by
+        the operating system, or null if the operating system does not report a
+        [=core=] count.
+    2.  If |cores| is null or 0, return 0.
+    3.  If |cores| is 1, return 1.
+    4.  If |cores| is between 2 and 4 (inclusive), return 2.
+    5.  If |cores| is between 5 and 10 (inclusive), return 3.
+    6.  Return 4.
+</div>
+
+NOTE: Implementations are permitted to adjust the returned [=performance
+tier=] when the [=CPU=] model is known to perform substantially better or
+worse than is typical for its [=core=] count. Such adjustments typically
+shift the [=performance tier=] by no more than a single tier level (i.e., by
++1 or &minus;1), and require reliable information about the [=CPU=] model
+from the operating system. The set of [=CPU=] models for which such
+adjustments are applied is implementation-defined.
+
+NOTE: A JavaScript [reference
+implementation](https://wicg.github.io/cpu-performance/cpu_performance.js) of
+this algorithm — including a representative set of model-based adjustments
+derived from the implementation in the Chromium browser engine — is available
+in the [cpu-performance repository](https://github.com/WICG/cpu-performance),
+along with an [interactive demo
+page](https://wicg.github.io/cpu-performance/demo.html) that illustrates how
+the algorithm and its model-based heuristics classify a wide range of
+real-world devices. These are not normative; they represent a suggested
+implementation of this section's algorithm with model-based adjustments
+applied.
+
+Implementations of this API should also adhere to the following rules:
+
+1.  **Consistency**: Any model-based adjustments to the [=performance tier=]
+    should reflect the [=CPU=] [=performance=] that can be measured with
+    specific benchmarks, ideally using programming tools provided by a browser
     (JavaScript, WebAssembly, etc.) and measured in ideal conditions. More
     powerful devices should not be classified in lower [=performance tiers=]
     than less powerful devices.
@@ -151,21 +181,12 @@ adhere to the following rules:
     break the behavior of obsolete machines running obsolete applications.
 
 3.  **User privacy**: To avoid user fingerprinting, implementations should
-    classify a fairly large number of user devices in each [=performance tier=]
-    (see also [[#security-privacy]]). In particular, implementations that are
-    based on some [=CPU=] model database should not return the special value 0
-    for new user devices that are not contained in the database. The special
-    value should be returned only when the implementation cannot obtain
-    information about the [=CPU=] from the operating system.
-
-Implementations may (but are not required to) compute the [=performance tier=]
-value for a given user device based on the following characteristics:
-
--   the [=CPU=] model;
--   the number of [=cores=], [=physical core|physical=] and/or [=logical
-    core|logical=];
--   the [=frequency=]; and
--   other available [=CPU=] characteristics.
+    ensure that a fairly large number of user devices fall into each
+    [=performance tier=] (see also [[#security-privacy]]). In particular,
+    model-based adjustments should be coarse enough that each [=performance
+    tier=] still contains many distinct [=CPU=] models, and the special value
+    0 should be returned only when the implementation cannot obtain
+    information about the number of [=cores=] from the operating system.
 
 
 Javascript API {#js-api}
@@ -183,10 +204,10 @@ Javascript API {#js-api}
   The <dfn attribute for=Navigator><code>cpuPerformance</code></dfn> getter
   steps are:
 
-    1.  Let |tier| be an {{unsigned short}} representing the [=performance
-        tier=] of the device's [=CPU=], generated in an
-        [=implementation-defined=] way, considering the recommendations
-        and constraints described in [[#computing-performance-tier-value]].
+    1.  Let |tier| be the result of [=compute the performance tier|computing
+        the performance tier=] of the device's [=CPU=], possibly with
+        model-based adjustments as described in
+        [[#computing-performance-tier-value]].
     2.  [=Assert=]: 0 &le; |tier| &le; 4.
     3.  Return |tier|.
 </div>
