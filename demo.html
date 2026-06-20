@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CPU Performance API — Reference Implementation Playground</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --border: #d8dde3;
+      --text: #1e2227;
+      --muted: #5a6470;
+      --accent: #2563eb;
+      --tier-0: #6b7280;
+      --tier-1: #ef4444;
+      --tier-2: #f59e0b;
+      --tier-3: #10b981;
+      --tier-4: #2563eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #15181d;
+        --panel: #1d2127;
+        --border: #2d333b;
+        --text: #e6e8eb;
+        --muted: #98a1ad;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+        sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.6rem; margin: 0 0 0.25rem; }
+    p.lede {
+      color: var(--muted);
+      margin: 0 0 1.75rem;
+    }
+    p.lede a { color: var(--accent); }
+    section.panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 1rem;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      font: inherit;
+      color: inherit;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.65rem;
+    }
+    input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 1rem;
+    }
+    .presets button {
+      font: inherit;
+      color: inherit;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.3rem 0.75rem;
+      cursor: pointer;
+    }
+    .presets button:hover { border-color: var(--accent); }
+    .result-grid {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 0.5rem 1.25rem;
+      align-items: baseline;
+    }
+    .result-grid dt {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .result-grid dd {
+      margin: 0;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      word-break: break-word;
+    }
+    .tier {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 50%;
+      color: white;
+      font-weight: 600;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.95rem;
+    }
+    .tier-0 { background: var(--tier-0); }
+    .tier-1 { background: var(--tier-1); }
+    .tier-2 { background: var(--tier-2); }
+    .tier-3 { background: var(--tier-3); }
+    .tier-4 { background: var(--tier-4); }
+    .tier-name {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    .footer {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 2rem;
+    }
+    .footer code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CPU Performance API Playground</h1>
+    <p class="lede">
+      Interactive playground for the
+      <a href="https://wicg.github.io/cpu-performance/">CPU Performance API</a>
+      JavaScript reference implementation. Enter a CPU model string and a
+      logical core count to see how the implementation would classify the
+      device.
+    </p>
+
+    <section class="panel">
+      <div class="row">
+        <div>
+          <label for="model">CPU model</label>
+          <input id="model" type="text" autocomplete="off" spellcheck="false"
+            placeholder="e.g. Intel(R) Core(TM) i7-1185G7 CPU @ 3.00GHz">
+        </div>
+        <div>
+          <label for="cores">Logical cores</label>
+          <input id="cores" type="number" min="0" max="256" step="1" value="8">
+        </div>
+      </div>
+
+      <div class="presets" id="presets">
+        <!-- Filled by script. -->
+      </div>
+    </section>
+
+    <section class="panel">
+      <dl class="result-grid">
+        <dt>navigator.cpuPerformance</dt>
+        <dd>
+          <span class="tier">
+            <span id="tier-badge" class="tier-badge tier-0">0</span>
+            <span id="tier-name" class="tier-name">Unknown</span>
+          </span>
+        </dd>
+        <dt>Manufacturer</dt>
+        <dd id="manufacturer">unknown</dd>
+        <dt>Normalized model</dt>
+        <dd id="normalized">(empty)</dd>
+        <dt>Cores-only tier</dt>
+        <dd id="cores-tier">0 — Unknown</dd>
+      </dl>
+    </section>
+
+    <p class="footer">
+      Implementation in
+      <code>cpu_performance.js</code>; mirrors the Chromium source in
+      <code>cpu_performance.cc</code>.
+    </p>
+  </main>
+
+  <script src="cpu_performance.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const {
+        Tier,
+        splitCpuModel,
+        getTierFromCores,
+        getTierFromCpuInfo,
+      } = globalThis.CpuPerformance;
+
+      const TIER_NAMES = ['Unknown', 'Low', 'Mid', 'High', 'Ultra'];
+
+      const PRESETS = [
+        { model: 'Apple M2', cores: 8 },
+        { model: 'Apple M3 Max', cores: 14 },
+        { model: 'Intel(R) Core(TM) Ultra 7 155H', cores: 8 },
+        { model: 'Intel(R) Core(TM) i7-1185G7 CPU @ 3.00GHz', cores: 8 },
+        { model: 'Intel(R) Core(TM) i5-10400 CPU @ 2.90GHz', cores: 6 },
+        { model: 'Intel(R) Pentium(R) CPU N3540 @ 2.16GHz', cores: 4 },
+        { model: 'Intel(R) Atom(TM) CPU Z520 @ 1.33GHz', cores: 2 },
+        { model: 'Intel N100', cores: 4 },
+        { model: 'AMD Ryzen 9 5950X 16-Core Processor', cores: 16 },
+        { model: 'AMD Ryzen 5 5600X 6-Core Processor', cores: 6 },
+        { model: 'AMD Ryzen 3 2200U', cores: 4 },
+        { model: 'AMD A4-9120e', cores: 2 },
+        { model: 'Qualcomm Snapdragon 8cx Gen 3', cores: 8 },
+        { model: 'Microsoft SQ3', cores: 8 },
+      ];
+
+      const modelInput = document.getElementById('model');
+      const coresInput = document.getElementById('cores');
+      const tierBadge = document.getElementById('tier-badge');
+      const tierName = document.getElementById('tier-name');
+      const manufacturerEl = document.getElementById('manufacturer');
+      const normalizedEl = document.getElementById('normalized');
+      const coresTierEl = document.getElementById('cores-tier');
+      const presetsEl = document.getElementById('presets');
+
+      function tierLabel(tier) {
+        return tier >= 0 && tier < TIER_NAMES.length
+          ? TIER_NAMES[tier]
+          : 'Tier ' + tier;
+      }
+
+      function update() {
+        const model = modelInput.value;
+        const cores = Math.max(0, Math.floor(Number(coresInput.value) || 0));
+
+        const tier = getTierFromCpuInfo(model, cores);
+        const split = splitCpuModel(model);
+        const coresTier = getTierFromCores(cores);
+
+        tierBadge.textContent = String(tier);
+        tierBadge.className =
+          'tier-badge tier-' + (tier >= 0 && tier <= 4 ? tier : 0);
+        tierName.textContent = tierLabel(tier);
+
+        manufacturerEl.textContent = split.manufacturer;
+        normalizedEl.textContent = split.model === '' ? '(empty)' : split.model;
+        coresTierEl.textContent =
+          String(coresTier) + ' — ' + tierLabel(coresTier);
+      }
+
+      for (const preset of PRESETS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = preset.model + ' · ' + preset.cores + 'c';
+        btn.addEventListener('click', () => {
+          modelInput.value = preset.model;
+          coresInput.value = String(preset.cores);
+          update();
+        });
+        presetsEl.appendChild(btn);
+      }
+
+      modelInput.addEventListener('input', update);
+      coresInput.addEventListener('input', update);
+
+      // Initialise with a reasonable default so the page isn't empty.
+      modelInput.value = 'Intel(R) Core(TM) Ultra 7 155H';
+      coresInput.value = '8';
+      update();
+    })();
+  </script>
+</body>
+</html>
