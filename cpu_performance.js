@@ -4,20 +4,12 @@
 // cpu_performance.cc. Its purpose is to make the classification rules
 // described informally by the specification (index.bs) easy to inspect,
 // reproduce, and test in isolation. The high-level shape of the API matches
-// the specification: a tier value in the range 0..4, where 0 means
-// "unknown" and 1..4 map to the four documented performance tiers.
+// the specification: `navigator.cpuPerformance` returns a non-negative
+// integer, where 0 means "unknown" and higher values mean higher tiers.
+// The specification currently defines tiers 1..4; future revisions are
+// expected to add 5, 6, and so on.
 
 'use strict';
-
-// Tier enum: numeric values match the specification's `navigator.cpuPerformance`
-// return values exactly (0 = unknown, 1..4 = low..ultra).
-const Tier = Object.freeze({
-  UNKNOWN: 0,
-  LOW: 1,
-  MID: 2,
-  HIGH: 3,
-  ULTRA: 4,
-});
 
 const Manufacturer = Object.freeze({
   UNKNOWN: 'unknown',
@@ -130,16 +122,16 @@ function splitCpuModel(cpuModel) {
 }
 
 function getTierFromCores(cores) {
-  if (cores >= 1 && cores <= 2) return Tier.LOW;
-  if (cores >= 3 && cores <= 4) return Tier.MID;
-  if (cores >= 5 && cores <= 12) return Tier.HIGH;
-  if (cores >= 13) return Tier.ULTRA;
-  return Tier.UNKNOWN;
+  if (cores >= 1 && cores <= 2) return 1;
+  if (cores >= 3 && cores <= 4) return 2;
+  if (cores >= 5 && cores <= 12) return 3;
+  if (cores >= 13) return 4;
+  return 0;
 }
 
 function getTierFromCpuInfo(cpuModel, cores) {
-  if (cores <= 0) return Tier.UNKNOWN;
-  if (cores <= 1) return Tier.LOW;
+  if (cores <= 0) return 0;
+  if (cores <= 1) return 1;
 
   const { manufacturer, model } = splitCpuModel(cpuModel);
   const m = (re) => re.test(model);
@@ -162,7 +154,7 @@ function getTierFromCpuInfo(cpuModel, cores) {
             // Trinity (~2012)
             m(/^(A4|A6)-[4]\d\d\dM[A-Z]*\b/))
         ) {
-          return Tier.LOW;
+          return 1;
         }
         // 2 cores, Bobcat + Jaguar
         if (
@@ -172,11 +164,11 @@ function getTierFromCpuInfo(cpuModel, cores) {
             m(/^(GX)-[2]\d\d[A-Z]*\b/) ||
             m(/^Sempron 2650\b/))
         ) {
-          return Tier.LOW;
+          return 1;
         }
         // 2 cores, Entry-Level Stoney Ridge 2019 6W Re-Release
         if (cores === 2 && m(/^A4-9120[Ce]\b/)) {
-          return Tier.LOW;
+          return 1;
         }
         // 4 cores, >= Zen
         if (
@@ -192,7 +184,7 @@ function getTierFromCpuInfo(cpuModel, cores) {
           // not 2 cores, Zen+ (~2018)
           !m(/^Ryzen Embedded R2312\b/)
         ) {
-          return Tier.HIGH;
+          return 3;
         }
         break;
       case Manufacturer.INTEL:
@@ -214,7 +206,7 @@ function getTierFromCpuInfo(cpuModel, cores) {
             // Penwell (~2012) + Cloverview (~2012)
             m(/^Atom (Z2)\d\d\d[A-Z]*\b/))
         ) {
-          return Tier.LOW;
+          return 1;
         }
         // 2-4 cores, E-Core, Silvermont + Airmont
         if (
@@ -238,7 +230,7 @@ function getTierFromCpuInfo(cpuModel, cores) {
             // Cherry Trail-T (~2015)
             m(/^Atom x[57]-(Z8)\d\d\d[A-Z]*\b/))
         ) {
-          return Tier.LOW;
+          return 1;
         }
         // 2 cores, E-Core, Goldmont
         if (
@@ -249,7 +241,7 @@ function getTierFromCpuInfo(cpuModel, cores) {
             // Denverton (~2017)
             m(/^Atom (C3)\d\d\d[A-Z]*\b/))
         ) {
-          return Tier.LOW;
+          return 1;
         }
         // 2 cores, P-Core, Merom + Penryn
         if (
@@ -261,7 +253,7 @@ function getTierFromCpuInfo(cpuModel, cores) {
             m(/^Pentium (E2|SU2|SU4|T2|T3|T4)\d\d\d[A-Z]*\b/) ||
             m(/^Xeon (3|E3|L3)\d\d\d[A-Z]*\b/))
         ) {
-          return Tier.LOW;
+          return 1;
         }
         // 2 cores, P-Core, Nehalem + Westmere
         if (
@@ -270,7 +262,7 @@ function getTierFromCpuInfo(cpuModel, cores) {
             m(/^Celeron (P4|U3)\d\d\d[A-Z]*\b/) ||
             m(/^Pentium (P6|U5)\d\d\d[A-Z]*\b/))
         ) {
-          return Tier.LOW;
+          return 1;
         }
         // 2 cores, P-Core, Mobile Sandy Bridge + Mobile Ivy Bridge
         if (
@@ -282,7 +274,7 @@ function getTierFromCpuInfo(cpuModel, cores) {
             m(/^Celeron (1)\d\d\d[A-Z]*\b/) ||
             m(/^Pentium (2|A1)\d\d\d[A-Z]*\b/))
         ) {
-          return Tier.LOW;
+          return 1;
         }
         // 4 cores, E-Core, >= Gracemont
         if (
@@ -291,39 +283,40 @@ function getTierFromCpuInfo(cpuModel, cores) {
             // Alder Lake-N (~2023)
             m(/^Atom x7425E\b/))
         ) {
-          return Tier.HIGH;
+          return 3;
         }
         break;
       default:
-        // Any other manufacturer with at most 2 cores is treated as Low.
-        if (cores <= 2) return Tier.LOW;
+        // Any other manufacturer with at most 2 cores is demoted to tier 1.
+        if (cores <= 2) return 1;
         break;
     }
-    return Tier.MID;
+    return 2;
   }
 
   if (cores <= 10) {
     switch (manufacturer) {
       case Manufacturer.APPLE:
         // 8+ cores, M-series
-        if (cores >= 8 && m(/^M\d+\b/)) return Tier.ULTRA;
+        if (cores >= 8 && m(/^M\d+\b/)) return 4;
         break;
       case Manufacturer.INTEL:
         // 8+ cores, >= Meteor Lake
-        if (cores >= 8 && m(/^Core Ultra\b/)) return Tier.ULTRA;
+        if (cores >= 8 && m(/^Core Ultra\b/)) return 4;
         break;
       default:
         break;
     }
-    return Tier.HIGH;
+    return 3;
   }
 
-  return Tier.ULTRA;
+  return 4;
 }
 
 // Spec-shaped accessor. Returns an object that exposes a `cpuPerformance`
 // getter behaving like `navigator.cpuPerformance` as defined in index.bs:
-// a non-negative integer in the range 0..4 (or higher in future revisions).
+// a non-negative integer where 0 means "unknown" and higher values mean
+// higher tiers.
 function createNavigatorCpuPerformance({ cpuModel = '', cores = 0 } = {}) {
   const tier = getTierFromCpuInfo(cpuModel, cores);
   return Object.freeze({
@@ -334,7 +327,6 @@ function createNavigatorCpuPerformance({ cpuModel = '', cores = 0 } = {}) {
 }
 
 const exports_ = {
-  Tier,
   Manufacturer,
   trimAndCollapseWhitespace,
   getManufacturer,
