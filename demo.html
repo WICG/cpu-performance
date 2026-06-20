@@ -3,6 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Origin trial tokens for `CpuPerformance`. -->
+  <!-- https://cpu.rbyers.ca -->
+  <meta http-equiv="origin-trial" content="Avip+aBf7+MrA0hrsZJ9YohHTKG570hQRVfSrRvxUSFtn5c3RIfl7olw9dttXo+9idqwiKN8+mhE9rzv1lsMBAAAAABVeyJvcmlnaW4iOiJodHRwczovL2NwdS5yYnllcnMuY2E6NDQzIiwiZmVhdHVyZSI6IkNwdVBlcmZvcm1hbmNlIiwiZXhwaXJ5IjoxNzg4ODI1NjAwfQ==">
+  <!-- https://wicg.github.io -->
+  <meta http-equiv="origin-trial" content="AuZ4GJ+Y1/kzz3iEusO6JXV0zPqgxh8wieBq49jGnUxdFW+FxkfVtDqmDyZhVWpLCXTVHh3A+SXWcn2ZkB71LQkAAABWeyJvcmlnaW4iOiJodHRwczovL3dpY2cuZ2l0aHViLmlvOjQ0MyIsImZlYXR1cmUiOiJDcHVQZXJmb3JtYW5jZSIsImV4cGlyeSI6MTc4ODgyNTYwMH0=">
   <title>CPU Performance API — Reference Implementation Playground</title>
   <style>
     :root {
@@ -106,11 +111,6 @@
       font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
       word-break: break-word;
     }
-    .tier {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
     .tier-badge {
       display: inline-flex;
       align-items: center;
@@ -128,9 +128,15 @@
     .tier-2 { background: var(--tier-2); }
     .tier-3 { background: var(--tier-3); }
     .tier-4 { background: var(--tier-4); }
-    .tier-name {
-      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    .support {
+      color: #1e2227;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
     }
+    .panel.support-yes { background: #effaee; border-color: #c8e7c4; }
+    .panel.support-no  { background: #fdeef0; border-color: #f1cdd0; }
     .footer {
       color: var(--muted);
       font-size: 0.85rem;
@@ -178,18 +184,22 @@
       <dl class="result-grid">
         <dt>navigator.cpuPerformance</dt>
         <dd>
-          <span class="tier">
-            <span id="tier-badge" class="tier-badge tier-0">0</span>
-            <span id="tier-name" class="tier-name">Unknown</span>
-          </span>
+          <span id="tier-badge" class="tier-badge tier-0">0</span>
         </dd>
         <dt>Manufacturer</dt>
         <dd id="manufacturer">unknown</dd>
         <dt>Normalized model</dt>
         <dd id="normalized">(empty)</dd>
         <dt>Cores-only tier</dt>
-        <dd id="cores-tier">0 — Unknown</dd>
+        <dd>
+          <span id="cores-tier-badge" class="tier-badge tier-0">0</span>
+        </dd>
       </dl>
+    </section>
+
+    <section id="browser-support" class="panel support">
+      <span>Your browser&rsquo;s <code>navigator.cpuPerformance</code>:</span>
+      <span id="browser-support-text">Checking&hellip;</span>
     </section>
   </main>
 
@@ -199,13 +209,10 @@
       'use strict';
 
       const {
-        Tier,
         splitCpuModel,
         getTierFromCores,
         getTierFromCpuInfo,
       } = globalThis.CpuPerformance;
-
-      const TIER_NAMES = ['Unknown', 'Low', 'Mid', 'High', 'Ultra'];
 
       // Grouped presets — used to populate <optgroup> elements.
       // Device groups (real-world phones, tablets, laptops) come first; the
@@ -404,35 +411,27 @@
       const modelInput = document.getElementById('model');
       const coresInput = document.getElementById('cores');
       const tierBadge = document.getElementById('tier-badge');
-      const tierName = document.getElementById('tier-name');
+      const coresTierBadge = document.getElementById('cores-tier-badge');
       const manufacturerEl = document.getElementById('manufacturer');
       const normalizedEl = document.getElementById('normalized');
-      const coresTierEl = document.getElementById('cores-tier');
       const presetSelect = document.getElementById('preset');
 
-      function tierLabel(tier) {
-        return tier >= 0 && tier < TIER_NAMES.length
-          ? TIER_NAMES[tier]
-          : 'Tier ' + tier;
+      function paintBadge(el, tier) {
+        el.textContent = String(tier);
+        el.className =
+          'tier-badge tier-' + (tier >= 0 && tier <= 4 ? tier : 0);
       }
 
       function update() {
         const model = modelInput.value;
         const cores = Math.max(0, Math.floor(Number(coresInput.value) || 0));
 
-        const tier = getTierFromCpuInfo(model, cores);
+        paintBadge(tierBadge, getTierFromCpuInfo(model, cores));
+        paintBadge(coresTierBadge, getTierFromCores(cores));
+
         const split = splitCpuModel(model);
-        const coresTier = getTierFromCores(cores);
-
-        tierBadge.textContent = String(tier);
-        tierBadge.className =
-          'tier-badge tier-' + (tier >= 0 && tier <= 4 ? tier : 0);
-        tierName.textContent = tierLabel(tier);
-
         manufacturerEl.textContent = split.manufacturer;
         normalizedEl.textContent = split.model === '' ? '(empty)' : split.model;
-        coresTierEl.textContent =
-          String(coresTier) + ' — ' + tierLabel(coresTier);
       }
 
       const placeholder = document.createElement('option');
@@ -485,6 +484,23 @@
       modelInput.value = 'Intel(R) Core(TM) Ultra 7 155H';
       coresInput.value = '8';
       update();
+
+      // Probe for the real navigator.cpuPerformance attribute.
+      const supportEl = document.getElementById('browser-support');
+      const supportText = document.getElementById('browser-support-text');
+      if (typeof navigator !== 'undefined' && 'cpuPerformance' in navigator) {
+        const value = navigator.cpuPerformance;
+        supportEl.classList.add('support-yes');
+        supportText.replaceChildren();
+        const badge = document.createElement('span');
+        badge.className =
+          'tier-badge tier-' + (value >= 0 && value <= 4 ? value : 0);
+        badge.textContent = String(value);
+        supportText.append(badge);
+      } else {
+        supportEl.classList.add('support-no');
+        supportText.textContent = 'Not supported by your browser';
+      }
     })();
   </script>
 </body>
