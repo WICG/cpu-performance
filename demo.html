@@ -60,6 +60,11 @@
       padding: 1.25rem 1.5rem;
       margin-bottom: 1.25rem;
     }
+    hr.panel-separator {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.25rem 0;
+    }
     .row {
       display: grid;
       grid-template-columns: 1fr 140px;
@@ -131,9 +136,14 @@
     .support {
       color: #1e2227;
       display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .support-item {
+      display: flex;
       align-items: center;
-      gap: 0.65rem;
-      flex-wrap: wrap;
+      gap: 0.5rem;
     }
     .panel.support-yes { background: #effaee; border-color: #c8e7c4; }
     .panel.support-no  { background: #fdeef0; border-color: #f1cdd0; }
@@ -178,9 +188,9 @@
           <!-- Filled by script. -->
         </select>
       </div>
-    </section>
 
-    <section class="panel">
+      <hr class="panel-separator">
+
       <dl class="result-grid">
         <dt>navigator.cpuPerformance</dt>
         <dd>
@@ -198,8 +208,19 @@
     </section>
 
     <section id="browser-support" class="panel support">
-      <span>Your browser&rsquo;s <code>navigator.cpuPerformance</code>:</span>
-      <span id="browser-support-text">Checking&hellip;</span>
+      <span>Your browser&rsquo;s values</span>
+      <div class="support-item">
+        <span><code>navigator.cpuPerformance</code>:</span>
+        <span id="support-cpu">Checking&hellip;</span>
+      </div>
+      <div class="support-item">
+        <span><code>navigator.hardwareConcurrency</code>:</span>
+        <span id="support-concurrency">Checking&hellip;</span>
+      </div>
+      <div class="support-item">
+        <span><code>navigator.deviceMemory</code>:</span>
+        <span id="support-memory">Checking&hellip;</span>
+      </div>
     </section>
   </main>
 
@@ -485,21 +506,43 @@
       coresInput.value = '8';
       update();
 
-      // Probe for the real navigator.cpuPerformance attribute.
+      // Probe for browser hardware attributes.
       const supportEl = document.getElementById('browser-support');
-      const supportText = document.getElementById('browser-support-text');
+      const supportCpu = document.getElementById('support-cpu');
+      const supportMemory = document.getElementById('support-memory');
+      const supportConcurrency = document.getElementById('support-concurrency');
+
       if (typeof navigator !== 'undefined' && 'cpuPerformance' in navigator) {
         const value = navigator.cpuPerformance;
         supportEl.classList.add('support-yes');
-        supportText.replaceChildren();
+        supportCpu.replaceChildren();
         const badge = document.createElement('span');
         badge.className =
           'tier-badge tier-' + (value >= 0 && value <= 4 ? value : 0);
         badge.textContent = String(value);
-        supportText.append(badge);
+        supportCpu.append(badge);
       } else {
         supportEl.classList.add('support-no');
-        supportText.textContent = 'Not supported by your browser';
+        supportCpu.textContent = 'Not supported';
+      }
+
+      if (
+        typeof navigator !== 'undefined' &&
+        'hardwareConcurrency' in navigator
+      ) {
+        const code = document.createElement('code');
+        code.textContent = String(navigator.hardwareConcurrency);
+        supportConcurrency.replaceChildren(code);
+      } else {
+        supportConcurrency.textContent = 'Not supported';
+      }
+
+      if (typeof navigator !== 'undefined' && 'deviceMemory' in navigator) {
+        const code = document.createElement('code');
+        code.textContent = String(navigator.deviceMemory);
+        supportMemory.replaceChildren(code);
+      } else {
+        supportMemory.textContent = 'Not supported';
       }
     })();
   </script>
