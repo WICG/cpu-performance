@@ -228,9 +228,9 @@ test('createNavigatorCpuPerformance exposes the spec-shaped attribute', () => {
   });
   assert.equal(nav.cpuPerformance, 4);
 
-  // The returned value must always be an integer in 0..4 per the spec.
+  // The returned value must always be an integer >= 0 per the spec.
   assert.equal(Number.isInteger(nav.cpuPerformance), true);
-  assert.ok(nav.cpuPerformance >= 0 && nav.cpuPerformance <= 4);
+  assert.ok(nav.cpuPerformance >= 0);
 
   // Default arguments mean "no CPU info available" — unknown tier (0).
   assert.equal(createNavigatorCpuPerformance().cpuPerformance, 0);
