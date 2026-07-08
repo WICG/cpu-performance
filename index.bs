@@ -2,7 +2,7 @@
 Title: CPU Performance API
 Shortname: cpu-performance
 Level: None
-Status: w3c/UD
+Status: w3c/CG-DRAFT
 Repository: WICG/cpu-performance
 URL: https://wicg.github.io/cpu-performance/
 Editor: Nikolaos Papaspyrou, Google https://google.com, nikolaos@google.com
