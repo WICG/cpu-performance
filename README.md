@@ -154,19 +154,19 @@ function getPresetFeatures() {
   switch (navigator.cpuPerformance) {
     case 1:
       return {
-        videoQuality: "QVGA",
+        videoQuality: 'QVGA',
         frameRate: 15,
         effects: [],
       };
     case 2:
       return {
-        videoQuality: "VGA",
+        videoQuality: 'VGA',
         frameRate: 15,
         effects: ['voice-detection', 'animated-reactions'],
       };
     case 3:
       return {
-        videoQuality: "720p",
+        videoQuality: '720p',
         frameRate: 30,
         effects: ['voice-detection', 'animated-reactions',
                   'noise-reduction'],
@@ -175,7 +175,7 @@ function getPresetFeatures() {
     case 0:    // Assuming high performance settings for unknown devices
     default:   // and for performance tiers higher than 4.
       return {
-        videoQuality: "1080p",
+        videoQuality: '1080p',
         frameRate: 30,
         effects: ['voice-detection', 'animated-reactions',
                   'noise-reduction', 'virtual-background'],
@@ -216,7 +216,7 @@ function callback(entries) {
 console.log(`Dynamic: monitoring begins`);
 
 const observer = new PressureObserver(callback);
-await observer.observe("cpu", { sampleInterval: 1000 }); // 1000ms
+await observer.observe('cpu', { sampleInterval: 1000 }); // 1000ms
 ```
 
 
