@@ -188,6 +188,38 @@ The API's specification should determine the smallest and largest acceptable
 bucket size, to prevent fingerprinting. This size should be in the order of a
 few hundred different CPU models.
 
+As a second example, a web application may consider applying some effect
+that improves UX but requires excessive computation power. When it loads,
+it could use the CPU Performance API to determine **statically** if the
+user device is powerful enough to enable this effect. Afterwards, it could
+use the [Compute Pressure API](https://github.com/w3c/compute-pressure) to **dynamically** monitor device usage, and control this effect accordingly.
+An [interactive demo](static-dynamic-demo.html) illustrates this use case.
+
+```js
+const available = navigator.cpuPerformance >= 3;
+let enabled = available;
+
+console.log(`Static: effect starts as ${enabled ? 'enabled' : 'disabled'}`);
+
+function callback(entries) {
+  const state = entries[entries.length - 1].state;
+
+  if (enabled && (state === 'serious' || state === 'critical')) {
+    enabled = false;
+    console.log(`CPU load is ${state}, disabling effect to preserve UX.`);
+  } else if (!enabled && available && (state === 'nominal' || state === 'fair')) {
+    enabled = true;
+    console.log(`CPU load is ${state}, re-enabling effect to improve UX.`);
+  }
+}
+
+console.log(`Dynamic: monitoring begins`);
+
+const observer = new PressureObserver(callback);
+await observer.observe("cpu", { sampleInterval: 1000 }); // 1000ms
+```
+
+
 ## Alternatives Considered
 
 ### Nature and Semantics of Performance Buckets
