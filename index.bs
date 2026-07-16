@@ -91,9 +91,7 @@ We will use the term <dfn>CPU</dfn> for the collection of central processing
 units that are contained in a computing device.
 We will use the term <dfn>core</dfn> to refer to a [=CPU=] part that can execute
 instruction threads, [=physical cores|physical=] or [=logical cores|logical=],
-as reported by the operating system. We will use the term <dfn>frequency</dfn>
-to refer to the clock speed of the [=CPU=], expressed in cycles per second (Hz)
-and determining how fast a [=physical core=] can execute instructions.
+as reported by the operating system.
 
 We will use the term <dfn>performance</dfn> to refer to how fast the [=CPU=] is
 perceived to be, from the point of view of a web application. A fast [=CPU=]
@@ -120,10 +118,78 @@ returned in case the API's implementation is unable to classify the user device.
 
 ## Computing Performance Tier Value ## {#computing-performance-tier-value}
 
-Classification of user devices to [=performance tiers=] is
-[=implementation-defined=] and should be interpreted by web applications
-according to their particular needs. However, implementations of this API should
-adhere to the following rules:
+<div algorithm>
+  To <dfn>compute the performance tier</dfn> of a user device's [=CPU=],
+  perform the following algorithm. The notation "|model| matches |description|"
+  is not formally defined. Implementations should use the correct way to
+  determine if the given [=CPU=] |model| matches the given |description|,
+  which loosely describes a family of [=CPU=] models with common
+  characteristics.
+
+    1.  Let |cores| be the number of [=logical cores=] of the [=CPU=] as
+        reported by the operating system, or null if the operating system
+        does not report a [=core=] count.
+    2.  If |cores| is null or 0, return 0.
+    3.  If |cores| is 1, return 1.
+    4.  Let |manufacturer| and |model| be the name of the [=CPU=] manufacturer
+        and the model of the [=CPU=], as reported by the operating system, or
+        null if the operating system does not report [=CPU=] information.
+    5.  If |cores| is less than or equal to 4:
+
+        i.  If |manufacturer| is "AMD":
+            1.  If |cores| is 2 and |model| matches any of the K8, K10,
+                Llano, or mobile Trinity microarchitectures, return 1.
+            2.  If |cores| is 2 and |model| matches any of the Bobcat
+                or Jaguar microarchitectures, return 1.
+            3.  If |cores| is 2 and |model| matches any of the A4-9120C
+                or A4-9120e models, return 1.
+            4.  If |cores| is 4 and |model| matches the Ryzen brand,
+                excluding dual-core models with Simultaneous Multithreading
+                (SMT), return 3.
+
+        ii. If |manufacturer| is "Intel":
+
+            1.  If |cores| is greater than or equal to 2 and |model| matches
+                any of the Bonnell or Saltwell microarchitectures, return 1.
+            2.  If |cores| is greater than or equal to 2 and |model| matches
+                any of the Silvermont or Airmont microarchitectures, return 1.
+            3.  If |cores| is 2 and |model| matches the Goldmont
+                microarchitecture, return 1.
+            4.  If |cores| is 2 and |model| matches any of the Merom or Penryn
+                microarchitectures, return 1.
+            5.  If |cores| is 2 and |model| matches any of the Nehalem or
+                Westmere microarchitectures, return 1.
+            6.  If |cores| is 2 and |model| matches any of the mobile Sandy
+                Bridge or mobile Ivy Bridge microarchitectures, return 1.
+            7.  If |cores| is 4 and |model| matches the Gracemont
+                microarchitecture, return 3.
+
+        iii. If |cores| is less than or equal to 2, return 1.
+
+        iv.  Return 2.
+
+    6.  If |cores| is less than or equal to 10:
+
+        i.  If |manufacturer| is "Apple":
+            1.  If |cores| is greater than or equal to 8 and |model| matches
+                the M-series, return 4.
+        ii. If |manufacturer| is "Intel":
+            1.  If |cores| is greater than or equal to 8 and |model| matches
+                the Core Ultra brand, return 4.
+        iii. Return 3.
+
+    7.  Return 4.
+</div>
+
+NOTE: A JavaScript [reference implementation](cpu_performance.js) of this
+algorithm (derived from the implementation in the Chromium browser engine)
+is available in the [cpu-performance repository](https://github.com/WICG/cpu-performance),
+along with an [interactive demo page](demo.html) that illustrates how the
+algorithm classifies a wide range of real-world devices.
+
+The algorithm above was designed in such a way to adhere to the following
+rules. Future updates to the specification should also adhere to the same
+rules:
 
 1.  **Consistency**: The mapping of devices to [=performance tiers=] should
     reflect the [=CPU=] [=performance=] that can be measured with specific
@@ -146,26 +212,18 @@ adhere to the following rules:
 
     NOTE: The intention of this rule is not to make it impossible to fix
     classification mistakes in implementations of this API. Such mistakes
-    will inevitably have to be fixed. Rather, the intention of the rule is
-    not to reclassify CPU models with new technology emerging, so as not to
+    will inevitably have to be fixed, both in the current specification
+    and/or in implementations. Rather, the intention of the rule is not
+    to reclassify CPU models with new technology emerging, so as not to
     break the behavior of obsolete machines running obsolete applications.
 
 3.  **User privacy**: To avoid user fingerprinting, implementations should
-    classify a fairly large number of user devices in each [=performance tier=]
-    (see also [[#security-privacy]]). In particular, implementations that are
-    based on some [=CPU=] model database should not return the special value 0
-    for new user devices that are not contained in the database. The special
-    value should be returned only when the implementation cannot obtain
-    information about the [=CPU=] from the operating system.
-
-Implementations may (but are not required to) compute the [=performance tier=]
-value for a given user device based on the following characteristics:
-
--   the [=CPU=] model;
--   the number of [=cores=], [=physical core|physical=] and/or [=logical
-    core|logical=];
--   the [=frequency=]; and
--   other available [=CPU=] characteristics.
+    ensure that a fairly large number of user devices fall into each
+    [=performance tier=] (see also [[#security-privacy]]). In particular,
+    each [=performance tier=] should contain many distinct [=CPU=] models,
+    and the special value 0 should be returned only when the implementation
+    cannot obtain information about the number of [=cores=] from the
+    operating system.
 
 
 Javascript API {#js-api}
@@ -183,10 +241,9 @@ Javascript API {#js-api}
   The <dfn attribute for=Navigator><code>cpuPerformance</code></dfn> getter
   steps are:
 
-    1.  Let |tier| be an {{unsigned short}} representing the [=performance
-        tier=] of the device's [=CPU=], generated in an
-        [=implementation-defined=] way, considering the recommendations
-        and constraints described in [[#computing-performance-tier-value]].
+    1.  Let |tier| be the result of [=compute the performance tier|computing
+        the performance tier=] of the device's [=CPU=], as described in
+        [[#computing-performance-tier-value]].
     2.  [=Assert=]: 0 &le; |tier| &le; 4.
     3.  Return |tier|.
 </div>
