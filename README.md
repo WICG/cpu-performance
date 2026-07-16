@@ -219,6 +219,18 @@ const observer = new PressureObserver(callback);
 await observer.observe('cpu', { sampleInterval: 1000 }); // 1000ms
 ```
 
+This example shows clearly how the two APIs complement each other, but also
+an important difference between the static information obtained by the CPU
+Performance API (the performance tier) and the dynamic information obtained
+by the Compute Pressure API (the pressure state). The former is **absolute**:
+it tells the web app how powerful the user device is, regardless of the
+current load or other conditions. The latter is **relative**: it tells the
+web app how well the user device is performing now, compared to what it would
+do in ideal conditions and with zero load. For the use case that is illustrated
+above, dynamic information alone is not sufficient to inform the web app
+whether the effect should be enabled. E.g., even if the pressure state is
+nominal, the user device may not be powerful enough to support it.
+
 
 ## Alternatives Considered
 
