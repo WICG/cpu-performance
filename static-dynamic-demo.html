@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CPU Performance API — Static/Dynamic Example</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --border: #d8dde3;
+      --text: #1e2227;
+      --muted: #5a6470;
+      --accent: #2563eb;
+      --tier-0: #6b7280;
+      --tier-1: #ef4444;
+      --tier-2: #f59e0b;
+      --tier-3: #10b981;
+      --tier-4: #2563eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #15181d;
+        --panel: #1d2127;
+        --border: #2d333b;
+        --text: #e6e8eb;
+        --muted: #98a1ad;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+        sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.6rem; margin: 0 0 0.25rem; }
+    strong {
+      font-weight: 600;
+      color: var(--accent);
+    }
+    p.lede {
+      color: var(--muted);
+      margin: 0 0;
+    }
+    p.lede a { color: var(--accent); }
+    ul.lede { margin-bottom: 1.75rem }
+    section.panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+    }
+    input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    .slider-container {
+      width: 100%;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+    .workers-display {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: 16rem 1fr;
+      gap: 0.5rem 1.25rem;
+      align-items: baseline;
+    }
+    .result-grid dt {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .result-grid dd {
+      margin: 0;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      word-break: break-word;
+    }
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 50%;
+      color: white;
+      font-weight: 600;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.95rem;
+    }
+    .tier-0 { background: var(--tier-0); }
+    .tier-1 { background: var(--tier-1); }
+    .tier-2 { background: var(--tier-2); }
+    .tier-3 { background: var(--tier-3); }
+    .tier-4 { background: var(--tier-4); }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.15rem 0.65rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+    .pressure-nominal { background: #ffffff; color: #1e2227; border: 1px solid var(--border); }
+    .pressure-fair { background: var(--tier-3); color: white; }
+    .pressure-serious { background: var(--tier-2); color: white; }
+    .pressure-critical { background: var(--tier-1); color: white; }
+    .bool-true { background: var(--tier-3); color: white; }
+    .bool-false { background: var(--tier-1); color: white; }
+    .support {
+      color: #1e2227;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    html.unsupported .demo {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CPU Performance API — Static/Dynamic Example</h1>
+    <ul class="lede">
+      <li>A web application considers applying some <strong>effect</strong> that
+        improves UX but requires excessive computation power.</li>
+      <li>It uses the <a href="https://wicg.github.io/cpu-performance/">CPU
+        Performance API</a> to determine <strong>statically</strong>
+        if the user device is powerful enough. The effect will be available only
+        if the device's tier is at least 3.</li>
+      <li>It also uses the <a href="https://www.w3.org/TR/compute-pressure/">Compute
+        Pressure API</a> to <strong>dynamically</strong> monitor device usage.
+        The effect is enabled if usage state is nominal or fair, and disabled
+        if it is serious or critical.</li>
+    </ul>
+
+    <section id="browser-support" class="panel demo support">
+      <dl class="result-grid">
+        <dt><code>navigator.cpuPerformance</code></dt>
+        <dd id="cpu-tier">Checking...</dd>
+        <dt>Compute pressure</dt>
+        <dd id="pressure-state">Checking...</dd>
+      </dl>
+      <div class="slider-container">
+        <label for="pressure-slider">Simulated CPU Load: <span id="slider-percentage">0</span>%</label>
+        <div class="slider-row">
+          <input type="range" id="pressure-slider" min="0" max="100" value="0" oninput="adjustPressureFromSlider(this.value)">
+          <div class="workers-display">
+            Workers: <span id="workers-count">0</span> / <span id="max-workers">?</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel demo">
+      <dl class="result-grid">
+        <dt>Effect available</dt>
+        <dd id="effect-available">unknown</dd>
+        <dt>Effect enabled</dt>
+        <dd id="effect-enabled">unknown</dd>
+      </dl>
+    </section>
+  
+    <section class="panel">
+      <pre id="console"></pre>
+    </section>
+  </main>
+  
+  <script>
+    const hasCpuPerformance = 'cpuPerformance' in navigator;
+    const hasComputePressure = 'PressureObserver' in window;
+
+    const consoleElement = document.getElementById('console');
+    const availableElement = document.getElementById('effect-available');
+    const enabledElement = document.getElementById('effect-enabled');
+    const pressureElement = document.getElementById('pressure-state');
+    const maxWorkersElement = document.getElementById('max-workers');
+    const tierElement = document.getElementById('cpu-tier');
+    const sliderElement = document.getElementById('pressure-slider');
+    const sliderPercentageElement = document.getElementById('slider-percentage');
+    const workersCountElement = document.getElementById('workers-count');
+
+    function log(message) {
+      console.log(message);
+      consoleElement.append(`${message}\n`);
+    }
+
+    function updateBoolean(element, value) {
+      element.replaceChildren();
+      const badge = document.createElement('span');
+      badge.className = `status-badge bool-${Boolean(value)}`;
+      badge.textContent = value ? "true" : "false";
+      element.append(badge);
+    }
+
+    function updatePressure(state) {
+      pressureElement.replaceChildren();
+      const badge = document.createElement('span');
+      const validStates = ['nominal', 'fair', 'serious', 'critical'];
+      const stateClass = validStates.includes(state) ? state : 'nominal';
+      badge.className = `status-badge pressure-${stateClass}`;
+      badge.textContent = state;
+      pressureElement.append(badge);
+    }
+
+    window.onload = function() {
+      if (!hasCpuPerformance || !hasComputePressure) return;
+
+      const tier = navigator.cpuPerformance;
+      log(`Reported tier: ${tier}`);
+      tierElement.replaceChildren();
+      const badge = document.createElement('span');
+      badge.className =
+        'tier-badge tier-' + (tier >= 0 && tier <= 4 ? tier : 0);
+      badge.textContent = String(tier);
+      tierElement.append(badge);
+
+      maxWorkersElement.textContent = String(navigator.hardwareConcurrency || 4);
+      adjustPressureFromSlider(sliderElement.value);
+    }
+
+    let lastState = '';
+
+    async function monitor() {
+      function callback(entries) {
+        const state = entries[entries.length - 1].state;
+        if (state != lastState) {
+          log(`Reported pressure: ${state}`);
+          updatePressure(state);
+          lastState = state;
+        }
+      }
+
+      const observer = new PressureObserver(callback);
+      await observer.observe("cpu", { sampleInterval: 1000 }); // 1000ms
+    }
+
+    async function main() {
+      const available = navigator.cpuPerformance >= 3;
+      updateBoolean(availableElement, available);
+      let enabled = available;
+      updateBoolean(enabledElement, enabled);
+
+      log(`Static: effect starts as ${enabled ? 'enabled' : 'disabled'}`);
+
+      function callback(entries) {
+        const state = entries[entries.length - 1].state;
+
+        if (enabled && (state === 'serious' || state === 'critical')) {
+          enabled = false;
+          updateBoolean(enabledElement, enabled);
+          log(`CPU load is ${state}, disabling effect to preserve UX.`);
+        } else if (!enabled && available && (state === 'nominal' || state === 'fair')) {
+          enabled = true;
+          updateBoolean(enabledElement, enabled);
+          log(`CPU load is ${state}, re-enabling effect to improve UX.`);
+        }
+      }
+
+      log(`Dynamic: monitoring begins`);
+
+      const observer = new PressureObserver(callback);
+      await observer.observe("cpu", { sampleInterval: 1000 }); // 1000ms
+    }
+
+    if (!hasCpuPerformance || !hasComputePressure) {
+      document.documentElement.classList.add('unsupported');
+      if (!hasCpuPerformance) {
+        log('The CPU Performance API is not supported in this browser.');
+      }
+      if (!hasComputePressure) {
+        log('The Compute Pressure API is not supported in this browser.');
+      }
+      log('This demo cannot run, sorry...');
+    } else {
+      monitor();
+      main();
+    }
+
+    const workerCode = `
+      self.onmessage = function(e) {
+        if (e.data === 'start') {
+          function burn() {
+            const start = performance.now();
+            while (performance.now() - start < 50) {
+              Math.sqrt(Math.random() * Math.random());
+            }
+            setTimeout(burn, 0);
+          }
+          burn();
+        }
+      };
+    `;
+
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const workerBlobUrl = URL.createObjectURL(blob);
+
+    const runningWorkers = [];
+    const maxWorkers = navigator.hardwareConcurrency || 10;
+
+    function adjustPressureFromSlider(value) {
+      const percentage = Number(value);
+      sliderPercentageElement.textContent = String(percentage);
+
+      const targetWorkers = Math.round((percentage / 100) * maxWorkers);
+
+      while (runningWorkers.length < targetWorkers) {
+        const worker = new Worker(workerBlobUrl);
+        worker.postMessage('start');
+        runningWorkers.push(worker);
+      }
+
+      while (runningWorkers.length > targetWorkers) {
+        const workerToKill = runningWorkers.pop();
+        workerToKill.terminate();
+      }
+
+      workersCountElement.textContent = String(runningWorkers.length);
+    }
+  </script>
+</body>
+</html>

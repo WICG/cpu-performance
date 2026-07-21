@@ -154,19 +154,19 @@ function getPresetFeatures() {
   switch (navigator.cpuPerformance) {
     case 1:
       return {
-        videoQuality: "QVGA",
+        videoQuality: 'QVGA',
         frameRate: 15,
         effects: [],
       };
     case 2:
       return {
-        videoQuality: "VGA",
+        videoQuality: 'VGA',
         frameRate: 15,
         effects: ['voice-detection', 'animated-reactions'],
       };
     case 3:
       return {
-        videoQuality: "720p",
+        videoQuality: '720p',
         frameRate: 30,
         effects: ['voice-detection', 'animated-reactions',
                   'noise-reduction'],
@@ -175,7 +175,7 @@ function getPresetFeatures() {
     case 0:    // Assuming high performance settings for unknown devices
     default:   // and for performance tiers higher than 4.
       return {
-        videoQuality: "1080p",
+        videoQuality: '1080p',
         frameRate: 30,
         effects: ['voice-detection', 'animated-reactions',
                   'noise-reduction', 'virtual-background'],
@@ -187,6 +187,50 @@ function getPresetFeatures() {
 The API's specification should determine the smallest and largest acceptable
 bucket size, to prevent fingerprinting. This size should be in the order of a
 few hundred different CPU models.
+
+As a second example, a web application may consider applying some effect
+that improves UX but requires excessive computation power. When it loads,
+it could use the CPU Performance API to determine **statically** if the
+user device is powerful enough to enable this effect. Afterwards, it could
+use the [Compute Pressure API](https://github.com/w3c/compute-pressure) to **dynamically** monitor device usage, and control this effect accordingly.
+An [interactive demo](static-dynamic-demo.html) illustrates this use case.
+
+```js
+const available = navigator.cpuPerformance >= 3;
+let enabled = available;
+
+console.log(`Static: effect starts as ${enabled ? 'enabled' : 'disabled'}`);
+
+function callback(entries) {
+  const state = entries[entries.length - 1].state;
+
+  if (enabled && (state === 'serious' || state === 'critical')) {
+    enabled = false;
+    console.log(`CPU load is ${state}, disabling effect to preserve UX.`);
+  } else if (!enabled && available && (state === 'nominal' || state === 'fair')) {
+    enabled = true;
+    console.log(`CPU load is ${state}, re-enabling effect to improve UX.`);
+  }
+}
+
+console.log(`Dynamic: monitoring begins`);
+
+const observer = new PressureObserver(callback);
+await observer.observe('cpu', { sampleInterval: 1000 }); // 1000ms
+```
+
+This example shows clearly how the two APIs complement each other, but also
+an important difference between the static information obtained by the CPU
+Performance API (the performance tier) and the dynamic information obtained
+by the Compute Pressure API (the pressure state). The former is **absolute**:
+it tells the web app how powerful the user device is, regardless of the
+current load or other conditions. The latter is **relative**: it tells the
+web app how well the user device is performing now, compared to what it would
+do in ideal conditions and with zero load. For the use case that is illustrated
+above, dynamic information alone is not sufficient to inform the web app
+whether the effect should be enabled. E.g., even if the pressure state is
+nominal, the user device may not be powerful enough to support it.
+
 
 ## Alternatives Considered
 
