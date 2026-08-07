@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Origin trial tokens for `CpuPerformance`. -->
+  <!-- https://rbyers.github.io -->
+  <meta http-equiv="origin-trial" content="AufTAiLNr6iiWkWLr8sISbpxFfeZBnf/xHSkYjX4k9Bs07HOHpmCCKwAOXsfr3hLBFF3w1dr++N5NtgpIXLW8wwAAABYeyJvcmlnaW4iOiJodHRwczovL3JieWVycy5naXRodWIuaW86NDQzIiwiZmVhdHVyZSI6IkNwdVBlcmZvcm1hbmNlIiwiZXhwaXJ5IjoxNzg4ODI1NjAwfQ==">
+  <!-- https://wicg.github.io -->
+  <meta http-equiv="origin-trial" content="AuZ4GJ+Y1/kzz3iEusO6JXV0zPqgxh8wieBq49jGnUxdFW+FxkfVtDqmDyZhVWpLCXTVHh3A+SXWcn2ZkB71LQkAAABWeyJvcmlnaW4iOiJodHRwczovL3dpY2cuZ2l0aHViLmlvOjQ0MyIsImZlYXR1cmUiOiJDcHVQZXJmb3JtYW5jZSIsImV4cGlyeSI6MTc4ODgyNTYwMH0=">
+  <title>CPU Performance API — Reference Implementation Playground</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --border: #d8dde3;
+      --text: #1e2227;
+      --muted: #5a6470;
+      --accent: #2563eb;
+      --tier-0: #6b7280;
+      --tier-1: #ef4444;
+      --tier-2: #f59e0b;
+      --tier-3: #10b981;
+      --tier-4: #2563eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #15181d;
+        --panel: #1d2127;
+        --border: #2d333b;
+        --text: #e6e8eb;
+        --muted: #98a1ad;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+        sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.6rem; margin: 0 0 0.25rem; }
+    p.lede {
+      color: var(--muted);
+      margin: 0 0 1.75rem;
+    }
+    p.lede a { color: var(--accent); }
+    section.panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 1rem;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      font: inherit;
+      color: inherit;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.65rem;
+    }
+    input:focus, select:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    .presets {
+      margin-top: 1rem;
+    }
+    select {
+      width: 100%;
+      font: inherit;
+      color: inherit;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.65rem;
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 0.5rem 1.25rem;
+      align-items: baseline;
+    }
+    .result-grid dt {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .result-grid dd {
+      margin: 0;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      word-break: break-word;
+    }
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 50%;
+      color: white;
+      font-weight: 600;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.95rem;
+    }
+    .tier-0 { background: var(--tier-0); }
+    .tier-1 { background: var(--tier-1); }
+    .tier-2 { background: var(--tier-2); }
+    .tier-3 { background: var(--tier-3); }
+    .tier-4 { background: var(--tier-4); }
+    .support {
+      color: #1e2227;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+    .panel.support-yes { background: #effaee; border-color: #c8e7c4; }
+    .panel.support-no  { background: #fdeef0; border-color: #f1cdd0; }
+    .footer {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 2rem;
+    }
+    .footer code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CPU Performance API Playground</h1>
+    <p class="lede">
+      Interactive playground for the
+      <a href="https://wicg.github.io/cpu-performance/">CPU Performance API</a>
+      JavaScript reference implementation. Enter a CPU model string and a
+      logical core count to see how the implementation would classify the
+      device.
+    </p>
+
+    <section class="panel">
+      <div class="row">
+        <div>
+          <label for="model">CPU model</label>
+          <input id="model" type="text" autocomplete="off" spellcheck="false"
+            placeholder="e.g. Intel(R) Core(TM) i7-1185G7 CPU @ 3.00GHz">
+        </div>
+        <div>
+          <label for="cores">Logical cores</label>
+          <input id="cores" type="number" min="0" max="256" step="1" value="8">
+        </div>
+      </div>
+
+      <div class="presets">
+        <label for="preset">Load a preset</label>
+        <select id="preset">
+          <!-- Filled by script. -->
+        </select>
+      </div>
+    </section>
+
+    <section class="panel">
+      <dl class="result-grid">
+        <dt>navigator.cpuPerformance</dt>
+        <dd>
+          <span id="tier-badge" class="tier-badge tier-0">0</span>
+        </dd>
+        <dt>Manufacturer</dt>
+        <dd id="manufacturer">unknown</dd>
+        <dt>Normalized model</dt>
+        <dd id="normalized">(empty)</dd>
+        <dt>Cores-only tier</dt>
+        <dd>
+          <span id="cores-tier-badge" class="tier-badge tier-0">0</span>
+        </dd>
+      </dl>
+    </section>
+
+    <section id="browser-support" class="panel support">
+      <span>Your browser&rsquo;s <code>navigator.cpuPerformance</code>:</span>
+      <span id="browser-support-text">Checking&hellip;</span>
+    </section>
+  </main>
+
+  <script src="cpu_performance.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const {
+        splitCpuModel,
+        getTierFromCores,
+        getTierFromCpuInfo,
+      } = globalThis.CpuPerformance;
+
+      // Grouped presets — used to populate <optgroup> elements.
+      // Device groups (real-world phones, tablets, laptops) come first; the
+      // CPU-family groups below are useful for poking at individual edge
+      // cases in the classifier.
+      const PRESET_GROUPS = [
+        {
+          group: 'Phones — flagship',
+          items: [
+            { device: 'iPhone 16 Pro (2024)', model: 'Apple A18 Pro', cores: 6 },
+            { device: 'iPhone 15 Pro (2023)', model: 'Apple A17 Pro', cores: 6 },
+            { device: 'iPhone 14 Pro (2022)', model: 'Apple A16 Bionic', cores: 6 },
+            { device: 'iPhone 13 (2021)', model: 'Apple A15 Bionic', cores: 6 },
+            { device: 'Samsung Galaxy S24 Ultra (US, 2024)', model: 'Qualcomm Snapdragon 8 Gen 3 for Galaxy', cores: 8 },
+            { device: 'Samsung Galaxy S24 (International, 2024)', model: 'Samsung Exynos 2400', cores: 10 },
+            { device: 'Samsung Galaxy S23 Ultra (2023)', model: 'Qualcomm Snapdragon 8 Gen 2 for Galaxy', cores: 8 },
+            { device: 'Samsung Galaxy S22 (US, 2022)', model: 'Qualcomm Snapdragon 8 Gen 1', cores: 8 },
+            { device: 'Google Pixel 8 Pro (2023)', model: 'Google Tensor G3', cores: 9 },
+            { device: 'OnePlus 12 (2024)', model: 'Qualcomm Snapdragon 8 Gen 3', cores: 8 },
+            { device: 'Xiaomi 14 (2024)', model: 'Qualcomm Snapdragon 8 Gen 3', cores: 8 },
+            { device: 'Vivo X100 Pro (India, 2023)', model: 'MediaTek Dimensity 9300', cores: 8 },
+            { device: 'iQOO 12 (India, 2023)', model: 'Qualcomm Snapdragon 8 Gen 3', cores: 8 },
+            { device: 'Realme GT Neo 5 (2023)', model: 'Qualcomm Snapdragon 8+ Gen 1', cores: 8 },
+          ],
+        },
+        {
+          group: 'Phones — mid-range / budget',
+          items: [
+            { device: 'iPhone SE 3rd gen (2022)', model: 'Apple A15 Bionic', cores: 6 },
+            { device: 'Samsung Galaxy A54 5G (2023)', model: 'Samsung Exynos 1380', cores: 8 },
+            { device: 'Samsung Galaxy A14 (2023)', model: 'MediaTek Helio G80', cores: 8 },
+            { device: 'Google Pixel 6a (2022)', model: 'Google Tensor', cores: 8 },
+            { device: 'Redmi Note 13 Pro (India, 2024)', model: 'Qualcomm Snapdragon 7s Gen 2', cores: 8 },
+            { device: 'Redmi 9 (India, 2020)', model: 'MediaTek Helio G80', cores: 8 },
+            { device: 'Redmi 9A (India, 2020)', model: 'MediaTek Helio G25', cores: 8 },
+            { device: 'Oppo Reno 11 (India, 2024)', model: 'MediaTek Dimensity 7050', cores: 8 },
+            { device: 'Motorola Edge 50 (2024)', model: 'MediaTek Dimensity 7300', cores: 8 },
+            { device: 'Moto G Power (2022)', model: 'MediaTek Helio G37', cores: 8 },
+            { device: 'Nokia G42 5G (2023)', model: 'Qualcomm Snapdragon 480+', cores: 8 },
+          ],
+        },
+        {
+          group: 'Phones — older / legacy',
+          items: [
+            { device: 'iPhone 6s (2015)', model: 'Apple A9', cores: 2 },
+            { device: 'iPhone 7 (2016)', model: 'Apple A10 Fusion', cores: 4 },
+            { device: 'iPhone X (2017)', model: 'Apple A11 Bionic', cores: 6 },
+            { device: 'iPhone XS (2018)', model: 'Apple A12 Bionic', cores: 6 },
+            { device: 'iPhone 11 (2019)', model: 'Apple A13 Bionic', cores: 6 },
+            { device: 'Samsung Galaxy S8 (US, 2017)', model: 'Qualcomm Snapdragon 835', cores: 8 },
+            { device: 'Samsung Galaxy S8 (International, 2017)', model: 'Samsung Exynos 8895', cores: 8 },
+            { device: 'Samsung Galaxy S10 (2019)', model: 'Qualcomm Snapdragon 855', cores: 8 },
+            { device: 'Samsung Galaxy Note 8 (2017)', model: 'Qualcomm Snapdragon 835', cores: 8 },
+            { device: 'Samsung Galaxy J7 (2016)', model: 'Samsung Exynos 7580', cores: 8 },
+            { device: 'OnePlus 6 (2018)', model: 'Qualcomm Snapdragon 845', cores: 8 },
+            { device: 'Google Nexus 5 (2013)', model: 'Qualcomm Snapdragon 800', cores: 4 },
+          ],
+        },
+        {
+          group: 'Tablets',
+          items: [
+            { device: 'iPad Pro M4 (2024, 1TB+)', model: 'Apple M4', cores: 10 },
+            { device: 'iPad Air M2 (2024)', model: 'Apple M2', cores: 8 },
+            { device: 'iPad (10th gen, 2022)', model: 'Apple A14 Bionic', cores: 6 },
+            { device: 'iPad mini 6 (2021)', model: 'Apple A15 Bionic', cores: 6 },
+            { device: 'iPad (9th gen, 2021)', model: 'Apple A13 Bionic', cores: 6 },
+            { device: 'Samsung Galaxy Tab S9 (2023)', model: 'Qualcomm Snapdragon 8 Gen 2 for Galaxy', cores: 8 },
+            { device: 'Samsung Galaxy Tab A9+ (2023)', model: 'Qualcomm Snapdragon 695', cores: 8 },
+            { device: 'Amazon Fire HD 10 (2023)', model: 'MediaTek Helio P60T', cores: 8 },
+          ],
+        },
+        {
+          group: 'Laptops — Apple',
+          items: [
+            { device: 'MacBook Pro 16" M3 Max (2023)', model: 'Apple M3 Max', cores: 16 },
+            { device: 'MacBook Pro 14" M3 Pro (2023)', model: 'Apple M3 Pro', cores: 12 },
+            { device: 'MacBook Air M2 (2022)', model: 'Apple M2', cores: 8 },
+            { device: 'MacBook Air M1 (2020)', model: 'Apple M1', cores: 8 },
+            { device: 'MacBook Pro 13" Intel (2020)', model: 'Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz', cores: 8 },
+          ],
+        },
+        {
+          group: 'Laptops — Windows / Chromebook',
+          items: [
+            { device: 'Dell XPS 15 (2023)', model: 'Intel(R) Core(TM) i7-13700H', cores: 20 },
+            { device: 'Dell XPS 13 (2023)', model: 'Intel(R) Core(TM) i7-1360P', cores: 16 },
+            { device: 'HP Spectre x360 14 (2024)', model: 'Intel(R) Core(TM) Ultra 7 155H', cores: 16 },
+            { device: 'Lenovo ThinkPad X1 Carbon Gen 11 (2023)', model: 'Intel(R) Core(TM) i7-1365U', cores: 12 },
+            { device: 'Lenovo Legion Pro 7i (2023)', model: 'Intel(R) Core(TM) i9-13900HX', cores: 24 },
+            { device: 'ASUS ROG Zephyrus G14 (2023)', model: 'AMD Ryzen 9 7940HS with Radeon Graphics', cores: 16 },
+            { device: 'Framework Laptop 13 (AMD, 2023)', model: 'AMD Ryzen 7 7840U with Radeon Graphics', cores: 16 },
+            { device: 'Microsoft Surface Pro 9 (2022)', model: 'Intel(R) Core(TM) i7-1255U', cores: 10 },
+            { device: 'Microsoft Surface Laptop 7 (2024, Copilot+)', model: 'Qualcomm Snapdragon X Elite', cores: 12 },
+            { device: 'Microsoft Surface Pro X (2019)', model: 'Microsoft SQ1', cores: 8 },
+            { device: 'Acer Chromebook 314 (2023)', model: 'Intel N100', cores: 4 },
+            { device: 'HP Chromebook 11 G4 (2015)', model: 'Intel(R) Celeron(R) CPU N2840 @ 2.16GHz', cores: 2 },
+            { device: 'Lenovo IdeaPad 1 (2022)', model: 'AMD Athlon Silver 3050U with Radeon Graphics', cores: 2 },
+          ],
+        },
+        {
+          group: 'Apple Silicon (Macs)',
+          items: [
+            { model: 'Apple M1', cores: 8 },
+            { model: 'Apple M1 Pro', cores: 10 },
+            { model: 'Apple M2', cores: 8 },
+            { model: 'Apple M2 Pro', cores: 10 },
+            { model: 'Apple M3', cores: 8 },
+            { model: 'Apple M3 Max', cores: 14 },
+            { model: 'Apple M4 Max', cores: 16 },
+          ],
+        },
+        {
+          group: 'Intel — Core Ultra',
+          items: [
+            { model: 'Intel(R) Core(TM) Ultra 5 125H', cores: 8 },
+            { model: 'Intel(R) Core(TM) Ultra 7 155H', cores: 8 },
+            { model: 'Intel(R) Core(TM) Ultra 9 285K', cores: 24 },
+          ],
+        },
+        {
+          group: 'Intel — Core i',
+          items: [
+            { model: 'Intel(R) Core(TM) i3-1115G4 CPU @ 3.00GHz', cores: 2 },
+            { model: 'Intel(R) Core(TM) i5-10400 CPU @ 2.90GHz', cores: 6 },
+            { model: 'Intel(R) Core(TM) i7-1185G7 CPU @ 3.00GHz', cores: 8 },
+            { model: 'Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz', cores: 12 },
+            { model: 'Intel(R) Core(TM) i9-13900K CPU @ 3.00GHz', cores: 24 },
+            { model: 'Intel(R) Core(TM)2 Duo CPU T7700 @ 2.40GHz', cores: 2 },
+            { model: 'Intel(R) Core(TM)2 Quad CPU Q9400 @ 2.66GHz', cores: 4 },
+          ],
+        },
+        {
+          group: 'Intel — Atom / Pentium / Celeron',
+          items: [
+            { model: 'Intel(R) Atom(TM) CPU Z520 @ 1.33GHz', cores: 2 },
+            { model: 'Intel(R) Atom(TM) CPU N270 @ 1.60GHz', cores: 2 },
+            { model: 'Intel(R) Atom(TM) CPU D525 @ 1.80GHz', cores: 4 },
+            { model: 'Intel(R) Atom(TM) x5-Z8350 CPU @ 1.44GHz', cores: 4 },
+            { model: 'Intel(R) Atom(TM) x7425E', cores: 4 },
+            { model: 'Intel(R) Celeron(R) CPU N2840 @ 2.16GHz', cores: 2 },
+            { model: 'Intel(R) Celeron(R) CPU J3455 @ 1.50GHz', cores: 4 },
+            { model: 'Intel(R) Pentium(R) CPU N3540 @ 2.16GHz', cores: 4 },
+            { model: 'Intel(R) Pentium(R) Silver N6005', cores: 4 },
+            { model: 'Intel N100', cores: 4 },
+            { model: 'Intel N305', cores: 8 },
+          ],
+        },
+        {
+          group: 'AMD — Ryzen',
+          items: [
+            { model: 'AMD Ryzen 3 2200U', cores: 4 },
+            { model: 'AMD Ryzen 3 3250U', cores: 4 },
+            { model: 'AMD Ryzen 5 2400G', cores: 4 },
+            { model: 'AMD Ryzen 5 5600X 6-Core Processor', cores: 6 },
+            { model: 'AMD Ryzen 7 5800H with Radeon Graphics', cores: 8 },
+            { model: 'AMD Ryzen 9 5950X 16-Core Processor', cores: 16 },
+            { model: 'AMD Ryzen 9 7950X3D 16-Core Processor', cores: 16 },
+            { model: 'AMD Ryzen Threadripper PRO 5995WX', cores: 64 },
+          ],
+        },
+        {
+          group: 'AMD — legacy / low-power',
+          items: [
+            { model: 'AMD A4-9120e', cores: 2 },
+            { model: 'AMD A6-4400M APU with Radeon HD Graphics', cores: 2 },
+            { model: 'AMD E1-2500 APU with Radeon HD Graphics', cores: 2 },
+            { model: 'AMD Athlon 64 X2', cores: 2 },
+            { model: 'AMD FX-8350 Eight-Core Processor', cores: 8 },
+          ],
+        },
+        {
+          group: 'Qualcomm / Microsoft / MediaTek / Samsung',
+          items: [
+            { model: 'Qualcomm Snapdragon 7c Gen 2', cores: 8 },
+            { model: 'Qualcomm Snapdragon 8cx Gen 3', cores: 8 },
+            { model: 'Qualcomm Snapdragon X Elite', cores: 12 },
+            { model: 'Microsoft SQ1', cores: 8 },
+            { model: 'Microsoft SQ3', cores: 8 },
+            { model: 'MediaTek Kompanio 1200', cores: 8 },
+            { model: 'Samsung Exynos 2200', cores: 8 },
+          ],
+        },
+        {
+          group: 'Cores-only fallback (unknown manufacturer)',
+          items: [
+            { model: 'Generic CPU', cores: 1 },
+            { model: 'Generic CPU', cores: 2 },
+            { model: 'Generic CPU', cores: 4 },
+            { model: 'Generic CPU', cores: 8 },
+            { model: 'Generic CPU', cores: 16 },
+            { model: '', cores: 0 },
+          ],
+        },
+      ];
+
+      const modelInput = document.getElementById('model');
+      const coresInput = document.getElementById('cores');
+      const tierBadge = document.getElementById('tier-badge');
+      const coresTierBadge = document.getElementById('cores-tier-badge');
+      const manufacturerEl = document.getElementById('manufacturer');
+      const normalizedEl = document.getElementById('normalized');
+      const presetSelect = document.getElementById('preset');
+
+      function paintBadge(el, tier) {
+        el.textContent = String(tier);
+        el.className =
+          'tier-badge tier-' + (tier >= 0 && tier <= 4 ? tier : 0);
+      }
+
+      function update() {
+        const model = modelInput.value;
+        const cores = Math.max(0, Math.floor(Number(coresInput.value) || 0));
+
+        paintBadge(tierBadge, getTierFromCpuInfo(model, cores));
+        paintBadge(coresTierBadge, getTierFromCores(cores));
+
+        const split = splitCpuModel(model);
+        manufacturerEl.textContent = split.manufacturer;
+        normalizedEl.textContent = split.model === '' ? '(empty)' : split.model;
+      }
+
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Select an example…';
+      presetSelect.appendChild(placeholder);
+
+      const presetIndex = [];
+      for (const { group, items } of PRESET_GROUPS) {
+        const og = document.createElement('optgroup');
+        og.label = group;
+        for (const preset of items) {
+          const opt = document.createElement('option');
+          opt.value = String(presetIndex.length);
+          const cpuLabel =
+            (preset.model || '(empty)') + ' · ' + preset.cores + 'c';
+          opt.textContent = preset.device
+            ? preset.device + ' — ' + cpuLabel
+            : cpuLabel;
+          og.appendChild(opt);
+          presetIndex.push(preset);
+        }
+        presetSelect.appendChild(og);
+      }
+
+      presetSelect.addEventListener('change', () => {
+        const idx = Number(presetSelect.value);
+        if (!Number.isInteger(idx) || idx < 0 || idx >= presetIndex.length) {
+          return;
+        }
+        const preset = presetIndex[idx];
+        modelInput.value = preset.model;
+        coresInput.value = String(preset.cores);
+        update();
+      });
+
+      function clearPresetSelection() {
+        presetSelect.value = '';
+      }
+      modelInput.addEventListener('input', () => {
+        clearPresetSelection();
+        update();
+      });
+      coresInput.addEventListener('input', () => {
+        clearPresetSelection();
+        update();
+      });
+
+      // Initialise with a reasonable default so the page isn't empty.
+      modelInput.value = 'Intel(R) Core(TM) Ultra 7 155H';
+      coresInput.value = '8';
+      update();
+
+      // Probe for the real navigator.cpuPerformance attribute.
+      const supportEl = document.getElementById('browser-support');
+      const supportText = document.getElementById('browser-support-text');
+      if (typeof navigator !== 'undefined' && 'cpuPerformance' in navigator) {
+        const value = navigator.cpuPerformance;
+        supportEl.classList.add('support-yes');
+        supportText.replaceChildren();
+        const badge = document.createElement('span');
+        badge.className =
+          'tier-badge tier-' + (value >= 0 && value <= 4 ? value : 0);
+        badge.textContent = String(value);
+        supportText.append(badge);
+      } else {
+        supportEl.classList.add('support-no');
+        supportText.textContent = 'Not supported by your browser';
+      }
+    })();
+  </script>
+</body>
+</html>
