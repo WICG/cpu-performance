@@ -91,9 +91,7 @@ We will use the term <dfn>CPU</dfn> for the collection of central processing
 units that are contained in a computing device.
 We will use the term <dfn>core</dfn> to refer to a [=CPU=] part that can execute
 instruction threads, [=physical cores|physical=] or [=logical cores|logical=],
-as reported by the operating system. We will use the term <dfn>frequency</dfn>
-to refer to the clock speed of the [=CPU=], expressed in cycles per second (Hz)
-and determining how fast a [=physical core=] can execute instructions.
+as reported by the operating system.
 
 We will use the term <dfn>performance</dfn> to refer to how fast the [=CPU=] is
 perceived to be, from the point of view of a web application. A fast [=CPU=]
