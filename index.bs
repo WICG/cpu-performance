@@ -23,6 +23,10 @@ Include MDN Panels: if possible
 Include Can I Use Panels: yes
 </pre>
 
+<wpt hidden>
+cpu-performance/cpu-performance.https.window.js
+</wpt>
+
 Introduction {#intro}
 =====================
 
