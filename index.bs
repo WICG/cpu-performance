@@ -24,7 +24,7 @@ Include Can I Use Panels: yes
 </pre>
 
 <wpt hidden>
-cpu-performance/cpu-performance.https.window.js
+cpu-performance.https.window.js
 </wpt>
 
 Introduction {#intro}
