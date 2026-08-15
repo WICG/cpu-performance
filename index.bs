@@ -17,15 +17,9 @@ Markup Shorthands: markdown yes, css no
 Complain About: accidental-2119 yes, missing-example-ids yes
 Assume Explicit For: yes
 Die On: warning
-WPT Path Prefix: cpu-performance
-WPT Display: open
 Include MDN Panels: if possible
 Include Can I Use Panels: yes
 </pre>
-
-<wpt hidden>
-cpu-performance.https.window.js
-</wpt>
 
 Introduction {#intro}
 =====================
